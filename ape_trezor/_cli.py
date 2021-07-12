@@ -62,3 +62,13 @@ def add(alias):
     path.write_text(json.dumps(output))
 
     notify("SUCCESS", f"A new account '{address}' has been added with the id '{alias}'")
+
+
+@cli.command(
+    short_help="Remove an Trezor account from your Ape configuration. \
+    (The account will not be deleted from the Trezor hardware device)"
+)
+@click.argument("alias")
+def delete(alias):
+    path = container.data_folder.joinpath(f"{alias}.json")
+    path.unlink()
