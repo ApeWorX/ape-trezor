@@ -56,10 +56,7 @@ def add(alias):
             account_n = int(account_choice)
 
     address = ethereum.get_address(client, account_n)
-    output = {}
-    output["account_n"] = account_n
-    output["address"] = address
-    path.write_text(json.dumps(output))
+    path.write_text(json.dumps({"address": address, "account_n": account_n}))
 
     notify("SUCCESS", f"A new account '{address}' has been added with the id '{alias}'")
 
