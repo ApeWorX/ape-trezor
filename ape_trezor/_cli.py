@@ -9,7 +9,7 @@ from trezorlib.client import get_default_client
 from trezorlib import ethereum
 
 from ape import accounts
-from ape.utils import notify
+from ape.utils import Abort, notify
 
 # NOTE: Must used the instantiated version of `AccountsContainer` in `accounts`
 container = accounts.containers["trezor"]
@@ -71,4 +71,7 @@ def add(alias):
 @click.argument("alias")
 def delete(alias):
     path = container.data_folder.joinpath(f"{alias}.json")
-    path.unlink()
+    try:
+        path.unlink()
+    except Exception as e:
+        raise Abort(f"File does not exist: {path}") from e
