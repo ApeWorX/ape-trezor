@@ -21,7 +21,8 @@ def cli():
 
 @cli.command(short_help="Add an account from your Trezor hardware device")
 @click.argument("alias")
-def add(alias):
+@click.option("--hdpath", default="m/44'/60'/0'/0")
+def add(hdpath, alias):
     if alias in accounts.aliases:
         notify("ERROR", f"Account with alias '{alias}' already exists")
         return
@@ -32,15 +33,15 @@ def add(alias):
     except Exception as e:
         raise Abort("Trezor device not find. Please connect via USB and unlock!") from e
 
-    account_n = None
     notify("INFO", "Please enter passphrase to allow address discovery.")
 
+    account_hdpath = None
     index_offset = 0
-    while type(account_n) != int:
+    while not account_hdpath:
         options = []
         for index in range(index_offset, index_offset + 10):
             options.append(str(index))
-            address = ethereum.get_address(client, index)
+            address = ethereum.get_address(client, parse_hdpath(f"{hdpath}/{index}"))
             click.echo(f"{address}: {index}")
         options.append("n")
         if index_offset > 0:
@@ -55,10 +56,10 @@ def add(alias):
         elif account_choice == "p":
             index_offset -= 10
         else:
-            account_n = int(account_choice)
+            account_hdpath = f"{hdpath}/{account_choice}"
 
-    address = ethereum.get_address(client, account_n)
-    path.write_text(json.dumps({"address": address, "account_n": account_n}))
+    address = ethereum.get_address(client, parse_hdpath(account_hdpath))
+    path.write_text(json.dumps({"address": address, "hdpath": account_hdpath}))
 
     notify("SUCCESS", f"A new account '{address}' has been added with the id '{alias}'")
 
