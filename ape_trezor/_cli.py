@@ -27,9 +27,14 @@ def add(alias):
         return
 
     path = container.data_folder.joinpath(f"{alias}.json")
-    client = get_default_client()
+    try:
+        client = get_default_client()
+    except Exception as e:
+        raise Abort("Trezor device not find. Please connect via USB and unlock!") from e
 
     account_n = None
+    notify("INFO", "Please enter passphrase to allow address discovery.")
+
     index_offset = 0
     while type(account_n) != int:
         options = []
@@ -64,8 +69,12 @@ def add(alias):
 )
 @click.argument("alias")
 def delete(alias):
+    if alias not in container.aliases:
+        raise Abort(f"Account with alias '{alias}' does not exist")
+
     path = container.data_folder.joinpath(f"{alias}.json")
     try:
         path.unlink()
+        notify("SUCCESS", f"Account '{alias}' has been removed")
     except Exception as e:
         raise Abort(f"File does not exist: {path}") from e
