@@ -1,6 +1,6 @@
 from ape import plugins
 
-from .account import AccountContainer, TrezorAccount
+from .accounts import AccountContainer, TrezorAccount
 
 
 @plugins.register(plugins.AccountPlugin)
