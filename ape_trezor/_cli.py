@@ -1,15 +1,11 @@
 import json
-from typing import List
 
-import click
-from eth_account import Account as EthAccount  # type: ignore
-from eth_utils import to_bytes
-
-from trezorlib.client import get_default_client
-from trezorlib import ethereum
-
+import click  # type: ignore
 from ape import accounts
 from ape.utils import Abort, notify
+from trezorlib import ethereum  # type: ignore
+from trezorlib.client import get_default_client  # type: ignore
+from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
 
 # NOTE: Must used the instantiated version of `AccountsContainer` in `accounts`
 container = accounts.containers["trezor"]
@@ -45,7 +41,8 @@ def add(alias):
         if index_offset > 0:
             options.append("p")
         account_choice = click.prompt(
-            "Please choose the address you would like to add, or type 'n' for the next ten entries (or 'p' for the previous 10)",
+            "Please choose the address you would like to add, "
+            "or type 'n' for the next ten entries (or 'p' for the previous 10)",
             type=click.Choice(options),
         )
         if account_choice == "n":

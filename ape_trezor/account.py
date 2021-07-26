@@ -2,16 +2,11 @@ import json
 from pathlib import Path
 from typing import Iterator, Optional
 
-import click
-from eth_account import Account as EthAccount  # type: ignore
-from eth_account.datastructures import SignedMessage  # type: ignore
-from eth_account.datastructures import SignedTransaction
-from eth_account.messages import SignableMessage  # type: ignore
-
-from trezorlib import ethereum
-
 from ape.api.accounts import AccountAPI, AccountContainerAPI, TransactionAPI
 from ape.convert import to_address
+from ape.types import AddressType
+from eth_account.datastructures import SignedMessage  # type: ignore
+from eth_account.messages import SignableMessage  # type: ignore
 
 
 class AccountContainer(AccountContainerAPI):
@@ -44,11 +39,11 @@ class TrezorAccount(AccountAPI):
         return json.loads(self._accountfile.read_text())
 
     @property
-    def address(self) -> str:
+    def address(self) -> AddressType:
         return to_address(self.accountfile["address"])
 
     def sign_message(self, msg: SignableMessage) -> Optional[SignedMessage]:
-        return
+        return None
 
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionAPI]:
         # NOTE: Some accounts may not offer signing things
