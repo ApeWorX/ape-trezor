@@ -31,7 +31,7 @@ def add(hdpath, alias):
     try:
         client = get_default_client()
     except Exception as e:
-        raise Abort("Trezor device not find. Please connect via USB and unlock!") from e
+        raise Abort("Trezor device not found. Please connect via USB and unlock!") from e
 
     notify("INFO", "Please enter passphrase to allow address discovery.")
 
@@ -59,7 +59,14 @@ def add(hdpath, alias):
             account_hdpath = f"{hdpath}/{account_choice}"
 
     address = ethereum.get_address(client, parse_hdpath(account_hdpath))
-    path.write_text(json.dumps({"address": address, "hdpath": account_hdpath}))
+    path.write_text(
+        json.dumps(
+            {
+                "address": address,
+                "hdpath": account_hdpath,
+            }
+        )
+    )
 
     notify("SUCCESS", f"A new account '{address}' has been added with the id '{alias}'")
 
@@ -79,3 +86,23 @@ def delete(alias):
         notify("SUCCESS", f"Account '{alias}' has been removed")
     except Exception as e:
         raise Abort(f"File does not exist: {path}") from e
+
+
+@cli.command(short_help="Sign a message with your trezor device")
+@click.argument("alias")
+@click.argument("message")
+@click.option("--hdpath", default="m/44'/60'/0'/0")
+def sign(hdpath, alias, message):
+    if alias not in accounts.aliases:
+        notify("ERROR", f"Account with alias '{alias}' does not exist")
+        return
+
+    path = container.data_folder.joinpath(f"{alias}.json")
+    account = json.loads(path.read_text())
+    try:
+        client = get_default_client()
+    except Exception as e:
+        raise Abort("Trezor device not found. Please connect via USB and unlock!") from e
+
+    signature = ethereum.sign_message(client, parse_hdpath(account["hdpath"]), message)
+    print(signature["signature"])
