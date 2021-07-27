@@ -88,11 +88,10 @@ def delete(alias):
         raise Abort(f"File does not exist: {path}") from e
 
 
-@cli.command(short_help="Sign a message with your trezor device")
+@cli.command(short_help="Sign a message with your Trezor device")
 @click.argument("alias")
 @click.argument("message")
-@click.option("--hdpath", default="m/44'/60'/0'/0")
-def sign(hdpath, alias, message):
+def message(alias, message):
     if alias not in accounts.aliases:
         notify("ERROR", f"Account with alias '{alias}' does not exist")
         return
@@ -105,4 +104,53 @@ def sign(hdpath, alias, message):
         raise Abort("Trezor device not found. Please connect via USB and unlock!") from e
 
     signature = ethereum.sign_message(client, parse_hdpath(account["hdpath"]), message)
+    print(signature["signature"])
+
+
+@cli.command(short_help="Sign a transaxtion with your Trezor device")
+@click.argument("alias")
+@click.argument("recipient")
+@click.argument("value")
+@click.option("--nonce", default=None)
+@click.option("--gas_price", default=None)
+@click.option("--gas_limit", default=None)
+@click.option("--data", default=None)
+@click.option("--chain_id", default=None)
+@click.option("--tx_type", default=None)
+def transaction(nonce, gas_price, gas_limit, data, chain_id, tx_type, alias, recipient, value):
+    if alias not in accounts.aliases:
+        notify("ERROR", f"Account with alias '{alias}' does not exist")
+        return
+
+    path = container.data_folder.joinpath(f"{alias}.json")
+    account = json.loads(path.read_text())
+    try:
+        client = get_default_client()
+    except Exception as e:
+        raise Abort("Trezor device not found. Please connect via USB and unlock!") from e
+
+    if nonce is None:
+        nonce = 0
+        # do seom stuff to get nonce
+    if gas_limit is None:
+        gas_limit = 0
+        # estimate gas limit
+    if gas_price is None:
+        gas_price = 0
+        # estimate gas price
+
+    breakpoint()
+
+    signature = ethereum.sign_tx(
+        client,
+        parse_hdpath(account["hdpath"]),
+        nonce,
+        gas_price,
+        gas_limit,
+        recipient,
+        int(value),
+        data=None,
+        chain_id=None,
+        tx_type=None,
+    )
     print(signature["signature"])
