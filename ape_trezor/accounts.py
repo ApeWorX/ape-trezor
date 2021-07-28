@@ -55,15 +55,16 @@ class TrezorAccount(AccountAPI):
         return to_address(self.accountfile["address"])
 
     def sign_message(self, msg: SignableMessage) -> Optional[SignedMessage]:
-        breakpoint()
         if msg.version != b"E":
             return None
-
         # TODO: trezor does not support eip712 yet, it only supports eip 191 personal_sign
-        signature = ethereum.sign_message(self.client, parse_hdpath(self.hdpath), msg.body)
-        # messagehash = _hash_eip191_message(msg)
 
-        return signature  # SignedMessage()
+        signature = ethereum.sign_message(self.client, parse_hdpath(self.hdpath), msg.body)
+        messagehash = _hash_eip191_message(msg)
+        r = signature["signature"][0:32]
+        s = signature["signature"][32:64]
+        v = signature["signature"][64]
+        return SignedMessage(messagehash, r, s, v, signature["signature"])
 
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionAPI]:
         # NOTE: Some accounts may not offer signing things

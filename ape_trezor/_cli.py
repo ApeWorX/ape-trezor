@@ -6,6 +6,7 @@ from ape.utils import Abort, notify
 from trezorlib import ethereum  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
+from eth_account.messages import SignableMessage  # type: ignore
 
 # NOTE: Must used the instantiated version of `AccountsContainer` in `accounts`
 container = accounts.containers["trezor"]
@@ -91,13 +92,16 @@ def delete(alias):
 @cli.command(short_help="Sign a message with your Trezor device")
 @click.argument("alias")
 @click.argument("message")
-def message(alias, message):
+def sign_message(alias, message):
     if alias not in accounts.aliases:
         notify("ERROR", f"Account with alias '{alias}' does not exist")
         return
 
+    eip191message = SignableMessage(
+        version=b"E",
+        header=f"thereum Signed Message:\n{len(message)}".encode("utf8"),
+        body=message.encode("utf8"),
+    )
     account = accounts.load(alias)
-    message = encode_defunct(text=message)
-    signature = account.sign_message(message)
-    print(signature["signature"])
-
+    signature = account.sign_message(eip191message)
+    print(signature["signature"].hex())
