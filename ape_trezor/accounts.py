@@ -80,5 +80,5 @@ class TrezorAccount(AccountAPI):
             txn.chain_id,
             # tx_type,
         )
-        txn.signature = signature
+        txn.signature = signature["signature"]
         return txn
