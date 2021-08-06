@@ -6,7 +6,8 @@ from ape.utils import Abort, notify
 from trezorlib import ethereum  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
-from eth_account.messages import SignableMessage  # type: ignore
+from ape.types import SignableMessage  # type: ignore
+from eth_account import Account
 
 # NOTE: Must used the instantiated version of `AccountsContainer` in `accounts`
 container = accounts.containers["trezor"]
@@ -104,4 +105,16 @@ def sign_message(alias, message):
     )
     account = accounts.load(alias)
     signature = account.sign_message(eip191message)
-    print(signature["signature"].hex())
+    print("Signature:",signature.encode_vrs().hex())
+
+
+@cli.command(short_help="Verify a message with your Trezor device")
+@click.argument("message")
+@click.argument("signature")
+def verify_message(message, signature):
+    eip191message = SignableMessage(
+        version=b"E",
+        header=f"thereum Signed Message:\n{len(message)}".encode("utf8"),
+        body=message.encode("utf8"),
+    )
+    print("signer:", Account.recover_message(eip191message,signature=signature))
