@@ -60,7 +60,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "eth-ape>=0.1.0a17,<0.2.0",
+        "eth-ape>=0.1.0a20,<0.2.0",
         "trezor>=0.12.2",
     ],  # NOTE: Add 3rd party libraries here
     entry_points={
