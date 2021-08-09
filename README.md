@@ -34,7 +34,7 @@ ape trezor add [PICK AN ALIAS]
 you can now load the account like any other account in Ape console and then use it to sign transactions.
 
 ```bash
-ape trezor sign-message $account_name "hello world"
+ape trezor sign-message [YOUR TREZOR ALIAS] "hello world"
 ape trezor verify "hello world"
 ```
 the output of `verify` should be the same address as the account `$account_name`
