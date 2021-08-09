@@ -105,7 +105,7 @@ def sign_message(alias, message):
     )
     account = accounts.load(alias)
     signature = account.sign_message(eip191message)
-    print("Signature:",signature.encode_vrs().hex())
+    notify("Signature:", signature.encode_vrs().hex())
 
 
 @cli.command(short_help="Verify a message with your Trezor device")
@@ -117,4 +117,4 @@ def verify_message(message, signature):
         header=f"thereum Signed Message:\n{len(message)}".encode("utf8"),
         body=message.encode("utf8"),
     )
-    print("signer:", Account.recover_message(eip191message,signature=signature))
+    notify("signer:", Account.recover_message(eip191message, signature=signature))
