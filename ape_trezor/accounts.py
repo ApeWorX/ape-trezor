@@ -4,12 +4,10 @@ from typing import Iterator, Optional
 
 from ape.api.accounts import AccountAPI, AccountContainerAPI, TransactionAPI
 from ape.convert import to_address
-from ape.types import AddressType, MessageSignature, TransactionSignature, SignableMessage
-
+from ape.types import AddressType, MessageSignature, SignableMessage, TransactionSignature
 from trezorlib import ethereum  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
-from hexbytes import HexBytes
 
 
 class AccountContainer(AccountContainerAPI):
