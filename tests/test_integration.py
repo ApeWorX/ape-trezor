@@ -1,6 +1,6 @@
-from ape import config
-
 import json
+
+from ape import config
 
 
 def test_delete(keyfile, runner, cli):
