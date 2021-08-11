@@ -59,7 +59,7 @@ class TrezorAccount(AccountAPI):
         r = signature.signature[1:33]
         s = signature.signature[33:65]
         v = signature.signature[0]
-        return MessageSignature(v, r, s)
+        return MessageSignature(v, r, s)  # type: ignore
 
     def sign_transaction(self, txn: TransactionAPI) -> TransactionSignature:
         # NOTE: Some accounts may not offer signing things
@@ -75,4 +75,4 @@ class TrezorAccount(AccountAPI):
             txn.chain_id,
             # tx_type,
         )
-        return TransactionSignature(vrs[0], vrs[1], vrs[2])
+        return TransactionSignature(vrs[0], vrs[1], vrs[2])  # type: ignore
