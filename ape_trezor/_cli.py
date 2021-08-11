@@ -1,11 +1,10 @@
 import json
 
 import click  # type: ignore
-from eth_account import Account
-
 from ape import accounts
 from ape.types import SignableMessage  # type: ignore
 from ape.utils import Abort, notify
+from eth_account import Account
 from trezorlib import ethereum  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.tools import parse_path as parse_hdpath  # type: ignore

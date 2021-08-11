@@ -1,7 +1,7 @@
 import pytest  # type: ignore
+from ape import config  # noqa: F401
 from click.testing import CliRunner
 
-from ape import config  # noqa: F401
 from ape_trezor import _cli
 
 
