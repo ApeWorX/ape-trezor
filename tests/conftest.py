@@ -1,13 +1,21 @@
+from ape import config  # noqa: F401
 import pytest  # type: ignore
-import glob
-import os
+from click.testing import CliRunner
+from ape_trezor import _cli
 
 
 @pytest.fixture
-def local_trezor_files():
-    return glob.glob("./tests/trezor/*")
+def keyfile():
+    return {"address": "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", "hdpath": "m/44'/60'/0'/0/0"}
 
 
 @pytest.fixture
-def ape_trezor_vitalik():
-    return os.getenv("HOME") + "/.ape/trezor/vitalik.json"
+def runner():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        yield runner
+
+
+@pytest.fixture
+def cli():
+    return _cli.cli
