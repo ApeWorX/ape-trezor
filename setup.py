@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from setuptools import (  # type: ignore
-    setup,
-    find_packages,
-)
+from setuptools import find_packages, setup  # type: ignore
 
 extras_require = {
     "test": [  # `test` GitHub Action jobs uses this
@@ -63,8 +60,15 @@ setup(
     include_package_data=True,
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
+        "eth-ape>=0.1.0a20,<0.2.0",
+        "trezor>=0.12.2",
     ],  # NOTE: Add 3rd party libraries here
-    python_requires=">=3.6,<4",
+    entry_points={
+        "ape_cli_subcommands": [
+            "ape_trezor=ape_trezor._cli:cli",
+        ],
+    },
+    python_requires=">=3.7,<4",
     extras_require=extras_require,
     py_modules=["ape_trezor"],
     license="Apache-2.0",
@@ -80,7 +84,6 @@ setup(
         "Operating System :: MacOS",
         "Operating System :: POSIX",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
