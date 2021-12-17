@@ -1,120 +1,135 @@
-import json
+from typing import List
 
-import click  # type: ignore
+import click
 from ape import accounts
-from ape.types import SignableMessage  # type: ignore
-from ape.utils import Abort, notify
+from ape.cli import (
+    ape_cli_context,
+    existing_alias_argument,
+    non_existing_alias_argument,
+    skip_confirmation_option,
+)
 from eth_account import Account
-from trezorlib import ethereum  # type: ignore
-from trezorlib.client import get_default_client  # type: ignore
-from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
+from eth_account.messages import encode_defunct
 
-# NOTE: Must used the instantiated version of `AccountsContainer` in `accounts`
-container = accounts.containers["trezor"]
+from ape_trezor.accounts import TrezorAccount
+from ape_trezor.choices import AddressPromptChoice
+from ape_trezor.client import TrezorClient
+from ape_trezor.hdpath import HDBasePath
 
 
 @click.group(short_help="Manage Trezor accounts")
 def cli():
     """
     Command-line helper for managing Trezor hardware device accounts.
-    You can add accounts using the add method.
+    You can add accounts using the `add` command.
     """
 
 
-@cli.command(short_help="Add an account from your Trezor hardware device")
-@click.argument("alias")
-@click.option("--hdpath", default="m/44'/60'/0'/0")
-def add(hdpath, alias):
-    if alias in accounts.aliases:
-        notify("ERROR", f"Account with alias '{alias}' already exists")
+@cli.command("list")
+@ape_cli_context()
+def list(cli_ctx):
+    """List the Trezor accounts in your ape configuration"""
+
+    trezor_accounts = _get_trezor_accounts()
+
+    if len(trezor_accounts) == 0:
+        cli_ctx.logger.warning("No accounts found.")
         return
 
-    path = container.data_folder.joinpath(f"{alias}.json")
-    try:
-        client = get_default_client()
-    except Exception as e:
-        raise Abort("Trezor device not found. Please connect via USB and unlock!") from e
+    num_accounts = len(accounts)
+    header = f"Found {num_accounts} account"
+    header += "s:" if num_accounts > 1 else ":"
+    click.echo(header)
 
-    notify("INFO", "Please enter passphrase to allow address discovery.")
-
-    account_hdpath = None
-    index_offset = 0
-    while not account_hdpath:
-        options = []
-        for index in range(index_offset, index_offset + 10):
-            options.append(str(index))
-            address = ethereum.get_address(client, parse_hdpath(f"{hdpath}/{index}"))
-            click.echo(f"{address}: {index}")
-        options.append("n")
-        if index_offset > 0:
-            options.append("p")
-        account_choice = click.prompt(
-            "Please choose the address you would like to add, "
-            "or type 'n' for the next ten entries (or 'p' for the previous 10)",
-            type=click.Choice(options),
-        )
-        if account_choice == "n":
-            index_offset += 10
-        elif account_choice == "p":
-            index_offset -= 10
-        else:
-            account_hdpath = f"{hdpath}/{account_choice}"
-
-    address = ethereum.get_address(client, parse_hdpath(account_hdpath))
-    path.write_text(
-        json.dumps(
-            {
-                "address": address,
-                "hdpath": account_hdpath,
-            }
-        )
-    )
-
-    notify("SUCCESS", f"A new account '{address}' has been added with the id '{alias}'")
+    for account in trezor_accounts:
+        alias_display = f" (alias: '{account.alias}')" if account.alias else ""
+        hd_path_display = f" (hd-path: '{account.hdpath}')" if account.hdpath else ""
+        click.echo(f"  {account.address}{alias_display}{hd_path_display}")
 
 
-@cli.command(
-    short_help="Remove an Trezor account from your Ape configuration. \
-    (The account will not be deleted from the Trezor hardware device)"
+def _get_trezor_accounts() -> List[TrezorAccount]:
+    return [a for a in accounts if isinstance(a, TrezorAccount)]
+
+
+@cli.command()
+@ape_cli_context()
+@non_existing_alias_argument()
+@click.option(
+    "--hd-path",
+    help=(
+        f"The Ethereum account derivation path prefix. "
+        f"Defaults to {HDBasePath.DEFAULT} where {{x}} is the account ID. "
+        "Exclude {x} to append the account ID to the end of the base path."
+    ),
+    callback=lambda ctx, param, arg: HDBasePath(arg),
 )
-@click.argument("alias")
-def delete(alias):
-    if alias not in container.aliases:
-        raise Abort(f"Account with alias '{alias}' does not exist")
+def add(cli_ctx, alias, hd_path):
+    """Add a account from your Trezor hardware wallet"""
+    client = TrezorClient(hd_path)
+    choices = AddressPromptChoice(client, hd_path)
+    address, account_hd_path = choices.get_user_selected_account()
+    container = accounts.containers.get("trezor")
+    container.save_account(alias, address, str(account_hd_path))
+    cli_ctx.logger.success(f"Account '{address}' successfully added with alias '{alias}'.")
 
-    path = container.data_folder.joinpath(f"{alias}.json")
-    try:
-        path.unlink()
-        notify("SUCCESS", f"Account '{alias}' has been removed")
-    except Exception as e:
-        raise Abort(f"File does not exist: {path}") from e
+
+@cli.command()
+@ape_cli_context()
+@existing_alias_argument(account_type=TrezorAccount)
+def delete(cli_ctx, alias):
+    """Remove a Trezor account from your ape configuration"""
+
+    container = accounts.containers.get("trezor")
+    container.delete_account(alias)
+    cli_ctx.logger.success(f"Account '{alias}' has been removed")
+
+
+@cli.command()
+@ape_cli_context()
+@skip_confirmation_option("Don't ask for confirmation when removing all accounts")
+def delete_all(cli_ctx, skip_confirmation):
+    """Remove all trezor accounts from your ape configuration"""
+
+    container = accounts.containers.get("trezor")
+    trezor_accounts = _get_trezor_accounts()
+    if len(trezor_accounts) == 0:
+        cli_ctx.logger.warning("No accounts found.")
+        return
+
+    user_agrees = skip_confirmation or click.confirm("Remove all Trezor accounts from ape?")
+    if not user_agrees:
+        cli_ctx.logger.info("No account were removed.")
+        return
+
+    for account in trezor_accounts:
+        container.delete_account(account.alias)
+        cli_ctx.logger.success(f"Account '{account.alias}' has been removed")
 
 
 @cli.command(short_help="Sign a message with your Trezor device")
 @click.argument("alias")
 @click.argument("message")
-def sign_message(alias, message):
+@ape_cli_context()
+def sign_message(cli_ctx, alias, message):
     if alias not in accounts.aliases:
-        notify("ERROR", f"Account with alias '{alias}' does not exist")
+        cli_ctx.logger.warning(f"Account with alias '{alias}' does not exist")
         return
 
-    eip191message = SignableMessage(
-        version=b"E",
-        header=f"thereum Signed Message:\n{len(message)}".encode("utf8"),
-        body=message.encode("utf8"),
-    )
+    eip191message = encode_defunct(text=message)
     account = accounts.load(alias)
     signature = account.sign_message(eip191message)
-    notify("Signature:", signature.encode_vrs().hex())
+    signature_bytes = signature.encode_vrs()
+
+    signer = Account.recover_message(eip191message, signature=signature_bytes)
+    if signer != account.address:
+        cli_ctx.abort(f"Signer resolves incorrectly, got {signer}, expected {account.address}.")
+
+    click.echo(signature.encode_vrs().hex())
 
 
 @cli.command(short_help="Verify a message with your Trezor device")
 @click.argument("message")
 @click.argument("signature")
 def verify_message(message, signature):
-    eip191message = SignableMessage(
-        version=b"E",
-        header=f"thereum Signed Message:\n{len(message)}".encode("utf8"),
-        body=message.encode("utf8"),
-    )
-    notify("signer:", Account.recover_message(eip191message, signature=signature))
+    eip191message = encode_defunct(text=message)
+    click.echo(f"signer: {Account.recover_message(eip191message, signature=signature)}")

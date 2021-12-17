@@ -4,75 +4,101 @@ from typing import Iterator, Optional
 
 from ape.api.accounts import AccountAPI, AccountContainerAPI, TransactionAPI
 from ape.convert import to_address
-from ape.types import AddressType, MessageSignature, SignableMessage, TransactionSignature
-from trezorlib import ethereum  # type: ignore
-from trezorlib.client import get_default_client  # type: ignore
-from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
+from ape.types import AddressType, MessageSignature, TransactionSignature
+from eth_account.messages import SignableMessage
+from hexbytes import HexBytes
+
+from ape_trezor.client import TrezorAccountClient
+from ape_trezor.exceptions import TrezorSigningError
+from ape_trezor.hdpath import HDAccountPath
+
+
+def _extract_version(msg: SignableMessage) -> bytes:
+    if isinstance(msg.version, HexBytes):
+        return msg.version.hex().encode()
+
+    return msg.version
 
 
 class AccountContainer(AccountContainerAPI):
     @property
-    def _accountfiles(self) -> Iterator[Path]:
+    def _account_files(self) -> Iterator[Path]:
         return self.data_folder.glob("*.json")
 
     @property
     def aliases(self) -> Iterator[str]:
-        for p in self._accountfiles:
+        for p in self._account_files:
             yield p.stem
 
     def __len__(self) -> int:
-        return len([*self._accountfiles])
+        return len([*self._account_files])
 
     def __iter__(self) -> Iterator[AccountAPI]:
-        for accountfile in self._accountfiles:
-            yield TrezorAccount(self, accountfile)  # type: ignore
+        for account_file in self._account_files:
+            yield TrezorAccount(self, account_file)  # type: ignore
+
+    def save_account(self, alias: str, address: str, hd_path: str):
+        """
+        Save a new Trezor account to your ape configuration.
+        """
+        account_data = {"address": address, "hdpath": hd_path}
+        path = self.data_folder.joinpath(f"{alias}.json")
+        path.write_text(json.dumps(account_data))
+
+    def delete_account(self, alias: str):
+        path = self.data_folder.joinpath(f"{alias}.json")
+
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            # It is ok file is missing.
+            # NOTE: we are unable to use ``missing_ok`` parameter in `unlink()`
+            # because of python 3.7 compatibility
+            return
 
 
 class TrezorAccount(AccountAPI):
-    _accountfile: Path
+    _account_file_path: Path
+
+    # Optional because it's lazily loaded
+    _account_client: Optional[TrezorAccountClient] = None
 
     @property
     def alias(self) -> str:
-        return self._accountfile.stem
-
-    @property
-    def accountfile(self) -> dict:
-        return json.loads(self._accountfile.read_text())
-
-    @property
-    def hdpath(self) -> str:
-        return self.accountfile["hdpath"]
-
-    @property
-    def client(self):
-        return get_default_client()
+        return self._account_file_path.stem
 
     @property
     def address(self) -> AddressType:
-        return to_address(self.accountfile["address"])
+        return to_address(self.account_file["address"])
+
+    @property
+    def hdpath(self) -> HDAccountPath:
+        raw_path = self.account_file["hdpath"]
+        return HDAccountPath(raw_path)
+
+    @property
+    def account_file(self) -> dict:
+        return json.loads(self._account_file_path.read_text())
+
+    @property
+    def _client(self) -> TrezorAccountClient:
+        if self._account_client is None:
+            self._account_client = TrezorAccountClient(self.address, self.hdpath)
+        return self._account_client
 
     def sign_message(self, msg: SignableMessage) -> Optional[MessageSignature]:
-        if msg.version != b"E":
-            return None
-        # TODO: trezor does not support eip712 yet, it only supports eip 191 personal_sign
-        signature = ethereum.sign_message(self.client, parse_hdpath(self.hdpath), msg.body)
-        r = signature.signature[1:33]
-        s = signature.signature[33:65]
-        v = signature.signature[0]
-        return MessageSignature(v, r, s)  # type: ignore
+        version = _extract_version(msg)
 
-    def sign_transaction(self, txn: TransactionAPI) -> TransactionSignature:
-        # NOTE: Some accounts may not offer signing things
-        vrs = ethereum.sign_tx(
-            self.client,
-            parse_hdpath(self.hdpath),
-            txn.nonce,
-            txn.gas_price,
-            txn.gas_limit,
-            txn.receiver,
-            txn.value,
-            txn.data,
-            txn.chain_id,
-            # tx_type,
-        )
-        return TransactionSignature(vrs[0], vrs[1], vrs[2])  # type: ignore
+        if version == b"E":
+            vrs = self._client.sign_personal_message(msg.body)
+        else:
+            # TODO: trezor does not support eip712 yet, it only supports eip 191 personal_sign
+            raise TrezorSigningError(
+                f"Unsupported message-signing specification, (version={version!r})"
+            )
+
+        return MessageSignature(*vrs)  # type: ignore
+
+    def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionSignature]:
+        vrs = self._client.sign_transaction(txn.as_dict())
+        return TransactionSignature(*vrs)  # type: ignore

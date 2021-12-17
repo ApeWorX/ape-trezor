@@ -60,7 +60,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "eth-ape>=0.1.0a20,<0.2.0",
+        "eth-ape>=0.1.0b1,<0.2.0",
         "trezor>=0.12.2",
     ],  # NOTE: Add 3rd party libraries here
     entry_points={
@@ -77,7 +77,7 @@ setup(
     packages=find_packages(exclude=["tests", "tests.*"]),
     package_data={"ape_trezor": ["py.typed"]},
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
