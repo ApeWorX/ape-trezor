@@ -10,7 +10,7 @@ from hexbytes import HexBytes
 
 from ape_trezor.client import TrezorAccountClient
 from ape_trezor.exceptions import TrezorSigningError
-from ape_trezor.hdpath import HDAccountPath
+from ape_trezor.hdpath import HDPath
 
 
 def _extract_version(msg: SignableMessage) -> bytes:
@@ -48,13 +48,8 @@ class AccountContainer(AccountContainerAPI):
     def delete_account(self, alias: str):
         path = self.data_folder.joinpath(f"{alias}.json")
 
-        try:
+        if path.exists():
             path.unlink()
-        except FileNotFoundError:
-            # It is ok file is missing.
-            # NOTE: we are unable to use ``missing_ok`` parameter in `unlink()`
-            # because of python 3.7 compatibility
-            return
 
 
 class TrezorAccount(AccountAPI):
@@ -72,9 +67,9 @@ class TrezorAccount(AccountAPI):
         return to_address(self.account_file["address"])
 
     @property
-    def hdpath(self) -> HDAccountPath:
+    def hdpath(self) -> HDPath:
         raw_path = self.account_file["hdpath"]
-        return HDAccountPath(raw_path)
+        return HDPath(raw_path)
 
     @property
     def account_file(self) -> dict:
@@ -91,8 +86,9 @@ class TrezorAccount(AccountAPI):
 
         if version == b"E":
             vrs = self._client.sign_personal_message(msg.body)
+        elif version == b"0x01":
+            vrs = self._client.sign_typed_data(msg.header, msg.body)
         else:
-            # TODO: trezor does not support eip712 yet, it only supports eip 191 personal_sign
             raise TrezorSigningError(
                 f"Unsupported message-signing specification, (version={version!r})"
             )

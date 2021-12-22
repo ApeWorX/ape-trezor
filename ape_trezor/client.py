@@ -1,16 +1,15 @@
 from typing import Optional, Tuple
 
 from ape.api.accounts import TransactionAPI
-from ape.types import TransactionSignature
 from eth_typing.evm import ChecksumAddress
 from trezorlib import ethereum
 from trezorlib.client import get_default_client  # type: ignore
-from trezorlib.exceptions import PinException
+from trezorlib.exceptions import PinException, TrezorFailure
 from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
 from trezorlib.transport import TransportException
 
-from ape_trezor.exceptions import TrezorAccountException, TrezorUsbError
-from ape_trezor.hdpath import HDAccountPath, HDBasePath
+from ape_trezor.exceptions import TrezorAccountException, TrezorClientError
+from ape_trezor.hdpath import HDBasePath, HDPath
 
 
 class TrezorClient:
@@ -23,11 +22,11 @@ class TrezorClient:
             self._client = get_default_client()
         except TransportException as exc:
             message = (
-                "Unable to open Trezor device path."
-                "Make sure you have your device unlocked via the passcode "
-                "and have the Ethereum app open."
+                "Unable to open Trezor device path. "
+                "Make sure you have your device unlocked via the passcode."
             )
-            raise TrezorUsbError(message) from exc
+            raise TrezorClientError(message) from exc
+
         self._hd_root_path = hd_root_path
 
     def get_account_path(self, account_id: int) -> str:
@@ -35,7 +34,7 @@ class TrezorClient:
             return ethereum.get_address(
                 self._client, parse_hdpath(f"{self._hd_root_path}/{account_id}")
             )
-        except PinException as exc:
+        except (PinException, TrezorFailure) as exc:
             message = "You have entered an invalid PIN."
             raise TrezorAccountException(message) from exc
 
@@ -46,7 +45,7 @@ def _to_vrs(reply: bytes) -> Tuple[int, bytes, bytes]:
     where `v` is 1 byte, `r` is 32 bytes, and `s` is 32 bytes.
     """
     if not reply:
-        raise TrezorUsbError("No data in reply")
+        raise TrezorClientError("No data in reply.")
 
     v = reply[0]  # 1 byte
     r = reply[1:33]  # 32 bytes
@@ -63,20 +62,19 @@ class TrezorAccountClient:
     def __init__(
         self,
         address: ChecksumAddress,
-        account_hd_path: HDAccountPath,
+        account_hd_path: HDPath,
     ):
         try:
             self._client = get_default_client()
         except TransportException as exc:
             message = (
-                "Unable to open Trezor device path."
-                "Make sure you have your device unlocked via the passcode "
-                "and have the Ethereum app open."
+                "Unable to open Trezor device path. "
+                "Make sure you have your device unlocked via the passcode."
             )
-            raise TrezorUsbError(message) from exc
+            raise TrezorClientError(message) from exc
+
         self._address = address
         self._account_hd_path = account_hd_path
-        self._path_bytes = b""  # cached calculation
 
     def __str__(self):
         return self._address
@@ -85,21 +83,34 @@ class TrezorAccountClient:
     def address(self) -> str:
         return self._address
 
-    @property
-    def path_bytes(self) -> bytes:
-        if self._path_bytes == b"":
-            self._path_bytes = self._account_hd_path.as_bytes()
+    def sign_personal_message(self, message: bytes) -> Optional[Tuple[int, bytes, bytes]]:
+        """
+        Sign an Ethereum message only following the EIP 191 specification and
+        using your Trezor device. You will need to follow the prompts on the device
+        to validate the message data.
+        """
 
-        return self._path_bytes
-
-    def sign_personal_message(self, message_bytes: bytes) -> Optional[Tuple[int, bytes, bytes]]:
-        signature = ethereum.sign_message(
-            self._client, parse_hdpath(self._account_hd_path.path), message_bytes
+        return _to_vrs(
+            ethereum.sign_message(
+                self._client, parse_hdpath(self._account_hd_path.path), message
+            ).signature
         )
-        return _to_vrs(signature.signature)
 
-    def sign_transaction(self, txn: TransactionAPI) -> TransactionSignature:
-        return ethereum.sign_tx(self._client, **txn)
+    def sign_typed_data(
+        self, domain_hash: bytes, message_hash: bytes
+    ) -> Optional[Tuple[int, bytes, bytes]]:
+        """
+        Sign an Ethereum message following the EIP 712 specification.
+        """
+
+        return _to_vrs(
+            ethereum.sign_typed_data(
+                self._client, parse_hdpath(self._account_hd_path), message_hash
+            ).signature
+        )
+
+    def sign_transaction(self, txn: TransactionAPI) -> Optional[Tuple[int, bytes, bytes]]:
+        return ethereum.sign_tx(self._client, parse_hdpath(self._account_hd_path), **txn)
 
 
 __all__ = [

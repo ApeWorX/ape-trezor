@@ -14,6 +14,7 @@ from eth_account.messages import encode_defunct
 from ape_trezor.accounts import TrezorAccount
 from ape_trezor.choices import AddressPromptChoice
 from ape_trezor.client import TrezorClient
+from ape_trezor.exceptions import TrezorSigningError
 from ape_trezor.hdpath import HDBasePath
 
 
@@ -21,7 +22,6 @@ from ape_trezor.hdpath import HDBasePath
 def cli():
     """
     Command-line helper for managing Trezor hardware device accounts.
-    You can add accounts using the `add` command.
     """
 
 
@@ -56,15 +56,12 @@ def _get_trezor_accounts() -> List[TrezorAccount]:
 @non_existing_alias_argument()
 @click.option(
     "--hd-path",
-    help=(
-        f"The Ethereum account derivation path prefix. "
-        f"Defaults to {HDBasePath.DEFAULT} where {{x}} is the account ID. "
-        "Exclude {x} to append the account ID to the end of the base path."
-    ),
+    help=("The Ethereum account derivation path prefix. " f"Defaults to {HDBasePath.DEFAULT}."),
     callback=lambda ctx, param, arg: HDBasePath(arg),
 )
 def add(cli_ctx, alias, hd_path):
     """Add a account from your Trezor hardware wallet"""
+
     client = TrezorClient(hd_path)
     choices = AddressPromptChoice(client, hd_path)
     address, account_hd_path = choices.get_user_selected_account()
@@ -81,7 +78,7 @@ def delete(cli_ctx, alias):
 
     container = accounts.containers.get("trezor")
     container.delete_account(alias)
-    cli_ctx.logger.success(f"Account '{alias}' has been removed")
+    cli_ctx.logger.success(f"Account '{alias}' has been removed.")
 
 
 @cli.command()
@@ -103,7 +100,7 @@ def delete_all(cli_ctx, skip_confirmation):
 
     for account in trezor_accounts:
         container.delete_account(account.alias)
-        cli_ctx.logger.success(f"Account '{account.alias}' has been removed")
+        cli_ctx.logger.success(f"Account '{account.alias}' has been removed.")
 
 
 @cli.command(short_help="Sign a message with your Trezor device")
@@ -111,8 +108,9 @@ def delete_all(cli_ctx, skip_confirmation):
 @click.argument("message")
 @ape_cli_context()
 def sign_message(cli_ctx, alias, message):
+
     if alias not in accounts.aliases:
-        cli_ctx.logger.warning(f"Account with alias '{alias}' does not exist")
+        cli_ctx.logger.warning(f"Account with alias '{alias}' does not exist.")
         return
 
     eip191message = encode_defunct(text=message)
@@ -120,10 +118,12 @@ def sign_message(cli_ctx, alias, message):
     signature = account.sign_message(eip191message)
     signature_bytes = signature.encode_vrs()
 
+    # Verify signature
     signer = Account.recover_message(eip191message, signature=signature_bytes)
     if signer != account.address:
         cli_ctx.abort(f"Signer resolves incorrectly, got {signer}, expected {account.address}.")
 
+    # Message signed successfully, return signature
     click.echo(signature.encode_vrs().hex())
 
 
@@ -131,5 +131,22 @@ def sign_message(cli_ctx, alias, message):
 @click.argument("message")
 @click.argument("signature")
 def verify_message(message, signature):
+
     eip191message = encode_defunct(text=message)
-    click.echo(f"signer: {Account.recover_message(eip191message, signature=signature)}")
+
+    try:
+        signer = Account.recover_message(eip191message, signature=signature)
+    except ValueError as exc:
+        message = "Message cannot be verified. Check the signature and try again."
+        raise TrezorSigningError(message) from exc
+
+    try:
+        alias = accounts[signer].alias
+    except IndexError:
+        alias = None
+
+    output = "Signer: "
+    output += f"({alias}) " if alias else ""
+    output += f"{signer}"
+
+    click.echo(output)
