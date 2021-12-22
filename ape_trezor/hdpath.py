@@ -30,4 +30,4 @@ class HDBasePath(HDPath):
         super().__init__(base_path)
 
     def get_account_path(self, account_id) -> HDPath:
-        return HDPath(f"{self.path}/{str(account_id)}")
+        return HDPath(f"{self.path}/{account_id}")

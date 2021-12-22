@@ -56,7 +56,7 @@ def _get_trezor_accounts() -> List[TrezorAccount]:
 @non_existing_alias_argument()
 @click.option(
     "--hd-path",
-    help=("The Ethereum account derivation path prefix. " f"Defaults to {HDBasePath.DEFAULT}."),
+    help=(f"The Ethereum account derivation path prefix. Defaults to {HDBasePath.DEFAULT}."),
     callback=lambda ctx, param, arg: HDBasePath(arg),
 )
 def add(cli_ctx, alias, hd_path):
@@ -135,18 +135,11 @@ def verify_message(message, signature):
     eip191message = encode_defunct(text=message)
 
     try:
-        signer = Account.recover_message(eip191message, signature=signature)
+        signer_address = Account.recover_message(eip191message, signature=signature)
     except ValueError as exc:
         message = "Message cannot be verified. Check the signature and try again."
         raise TrezorSigningError(message) from exc
 
-    try:
-        alias = accounts[signer].alias
-    except IndexError:
-        alias = None
+    alias = accounts[signer_address].alias if signer_address in accounts else "n/a"
 
-    output = "Signer: "
-    output += f"({alias}) " if alias else ""
-    output += f"{signer}"
-
-    click.echo(output)
+    click.echo(f"Signer: {signer_address}  {alias}")

@@ -1,6 +1,6 @@
 # ape-trezor
 
-Ape Trezor is a plugin for [Ape Framework](https://github.com/ApeWorx/ape) which integrates [Trezorlib ethereum.py](https://github.com/trezor/trezor-firmware/blob/master/python/src/trezorlib/ethereum.py) to load and create accounts, sign messages, and sign transactions. 
+Ape Trezor is a plugin for [Ape Framework](https://github.com/ApeWorx/ape) which integrates [Trezorlib ethereum.py](https://github.com/trezor/trezor-firmware/blob/master/python/src/trezorlib/ethereum.py) to load and create accounts, sign messages, and sign transactions.
 
 ## Dependencies
 
@@ -41,8 +41,8 @@ the output of `verify` should be the same address as the account `$account_name`
 
 ## Development
 
-This project is in early development and should be considered an alpha.
-Things might not work, breaking changes are likely.
+This project is in development and should be considered a beta.
+Things might not be in their final state and breaking changes may occur.
 Comments, questions, criticisms and pull requests are welcomed.
 
 ## License

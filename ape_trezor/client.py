@@ -1,14 +1,17 @@
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
-from ape.api.accounts import TransactionAPI
 from eth_typing.evm import ChecksumAddress
-from trezorlib import ethereum
+from trezorlib import ethereum  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
-from trezorlib.exceptions import PinException, TrezorFailure
+from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
 from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
-from trezorlib.transport import TransportException
+from trezorlib.transport import TransportException  # type: ignore
 
-from ape_trezor.exceptions import TrezorAccountException, TrezorClientError
+from ape_trezor.exceptions import (
+    TrezorAccountException,
+    TrezorClientConnectionError,
+    TrezorClientError,
+)
 from ape_trezor.hdpath import HDBasePath, HDPath
 
 
@@ -20,12 +23,8 @@ class TrezorClient:
     def __init__(self, hd_root_path: HDBasePath):
         try:
             self._client = get_default_client()
-        except TransportException as exc:
-            message = (
-                "Unable to open Trezor device path. "
-                "Make sure you have your device unlocked via the passcode."
-            )
-            raise TrezorClientError(message) from exc
+        except TransportException:
+            raise TrezorClientConnectionError()
 
         self._hd_root_path = hd_root_path
 
@@ -66,12 +65,8 @@ class TrezorAccountClient:
     ):
         try:
             self._client = get_default_client()
-        except TransportException as exc:
-            message = (
-                "Unable to open Trezor device path. "
-                "Make sure you have your device unlocked via the passcode."
-            )
-            raise TrezorClientError(message) from exc
+        except TransportException:
+            raise TrezorClientConnectionError()
 
         self._address = address
         self._account_hd_path = account_hd_path
@@ -104,13 +99,13 @@ class TrezorAccountClient:
         """
 
         return _to_vrs(
-            ethereum.sign_typed_data(
-                self._client, parse_hdpath(self._account_hd_path), message_hash
+            ethereum.sign_typed_data_hash(
+                self._client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
             ).signature
         )
 
-    def sign_transaction(self, txn: TransactionAPI) -> Optional[Tuple[int, bytes, bytes]]:
-        return ethereum.sign_tx(self._client, parse_hdpath(self._account_hd_path), **txn)
+    def sign_transaction(self, txn: Dict[Any, Any]) -> Optional[Tuple[int, bytes, bytes]]:
+        return ethereum.sign_tx(self._client, parse_hdpath(self._account_hd_path.path), **txn)
 
 
 __all__ = [
