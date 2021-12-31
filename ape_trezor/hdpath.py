@@ -22,10 +22,8 @@ class HDBasePath(HDPath):
     :class:`~ape_trezor.hdpath.HDPath`.
     """
 
-    DEFAULT = "m/44'/60'/0'/0"
-
-    def __init__(self, base_path=DEFAULT):
-        base_path = base_path or self.DEFAULT
+    def __init__(self, base_path=None):
+        base_path = base_path or "m/44'/60'/0'/0"
         base_path = base_path.rstrip("/")
         super().__init__(base_path)
 

@@ -25,6 +25,9 @@ class TrezorClient:
             self._client = get_default_client()
         except TransportException:
             raise TrezorClientConnectionError()
+        # Handles an unhandled usb exception in Trezor transport
+        except Exception as exc:
+            raise TrezorClientError(f"Error: {exc}")
 
         self._hd_root_path = hd_root_path
 
