@@ -56,7 +56,7 @@ def _get_trezor_accounts() -> List[TrezorAccount]:
 @non_existing_alias_argument()
 @click.option(
     "--hd-path",
-    help=("The Ethereum account derivation path prefix. Defaults to m/44'/60'/0'/0."),
+    help="The Ethereum account derivation path prefix. Defaults to m/44'/60'/0'/0.",
     callback=lambda ctx, param, arg: HDBasePath(arg),
 )
 def add(cli_ctx, alias, hd_path):
@@ -124,7 +124,7 @@ def sign_message(cli_ctx, alias, message):
         cli_ctx.abort(f"Signer resolves incorrectly, got {signer}, expected {account.address}.")
 
     # Message signed successfully, return signature
-    click.echo(signature.encode_vrs().hex())
+    click.echo("Signature: " + signature.encode_vrs().hex())
 
 
 @cli.command(short_help="Verify a message with your Trezor device")

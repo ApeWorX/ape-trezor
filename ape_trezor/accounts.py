@@ -85,16 +85,25 @@ class TrezorAccount(AccountAPI):
         version = _extract_version(msg)
 
         if version == b"E":
-            vrs = self._client.sign_personal_message(msg.body)
+            signed_msg = self._client.sign_personal_message(msg.body)
         elif version == b"0x01":
-            vrs = self._client.sign_typed_data(msg.header, msg.body)
+            signed_msg = self._client.sign_typed_data(msg.header, msg.body)
         else:
             raise TrezorSigningError(
                 f"Unsupported message-signing specification, (version={version!r})"
             )
 
-        return MessageSignature(*vrs)  # type: ignore
+        return MessageSignature(  # type: ignore
+            v=signed_msg.v,
+            r=signed_msg.r,
+            s=signed_msg.s,
+        )
 
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionSignature]:
-        vrs = self._client.sign_transaction(txn.as_dict())
-        return TransactionSignature(*vrs)  # type: ignore
+        signed_txn = self._client.sign_transaction(txn.as_dict())
+
+        return TransactionSignature(  # type: ignore
+            v=signed_txn.v,
+            r=signed_txn.r,
+            s=signed_txn.s,
+        )
