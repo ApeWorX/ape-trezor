@@ -64,7 +64,6 @@ setup(
         "eth-account>=0.5.6,<0.6.0",
         "eth-typing>=2.2.2",
         "trezor>=0.12.2",
-        "pydantic>=1.9.0",
     ],  # NOTE: Add 3rd party libraries here
     entry_points={
         "ape_cli_subcommands": [

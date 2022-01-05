@@ -93,17 +93,9 @@ class TrezorAccount(AccountAPI):
                 f"Unsupported message-signing specification, (version={version!r})"
             )
 
-        return MessageSignature(  # type: ignore
-            v=signed_msg.v,
-            r=signed_msg.r,
-            s=signed_msg.s,
-        )
+        return MessageSignature(*signed_msg)  # type: ignore
 
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionSignature]:
         signed_txn = self._client.sign_transaction(txn.as_dict())
 
-        return TransactionSignature(  # type: ignore
-            v=signed_txn.v,
-            r=signed_txn.r,
-            s=signed_txn.s,
-        )
+        return TransactionSignature(*signed_txn)  # type: ignore

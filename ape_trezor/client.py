@@ -1,10 +1,10 @@
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from eth_typing.evm import ChecksumAddress
-from pydantic import BaseModel
 from trezorlib import ethereum  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
+from trezorlib.messages import TransactionType  # type: ignore
 from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
@@ -41,32 +41,15 @@ class TrezorClient:
             raise TrezorAccountException(message) from exc
 
 
-class TrezorSignature(BaseModel):
+def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, bytes]:
     """
-    Class representing a Trezor Signature
+    Breaks `signature_bytes` into 3 chunks vrs, where `v` is 1 byte, `r` is 32
+    bytes, and `s` is 32 bytes.
     """
+    if signature_bytes is None:
+        raise TrezorClientError("No data in signature bytes.")
 
-    v: int
-    r: bytes
-    s: bytes
-
-    def __init__(self, **data: Any) -> None:
-        """
-        Pass `v`: int, `r`: bytes, and  `s`: bytes fields directly
-        or an array of bytes as `signature_bytes` to be broken into 3 chunks
-        vrs, where `v` is 1 byte, `r` is 32 bytes, and `s` is 32 bytes.
-        """
-        if "signature_bytes" in data:
-            signature_bytes = data.pop("signature_bytes")
-
-            if signature_bytes is None:
-                raise TrezorClientError("No data in signature bytes.")
-
-            data["v"] = signature_bytes[0]  # 1 byte
-            data["r"] = signature_bytes[1:33]  # 32 bytes
-            data["s"] = signature_bytes[33:65]  # 32 bytes
-
-        super().__init__(**data)
+    return signature_bytes[0], signature_bytes[1:33], signature_bytes[33:65]
 
 
 class TrezorAccountClient:
@@ -95,7 +78,7 @@ class TrezorAccountClient:
     def address(self) -> str:
         return self._address
 
-    def sign_personal_message(self, message: bytes) -> TrezorSignature:
+    def sign_personal_message(self, message: bytes) -> Tuple[int, bytes, bytes]:
         """
         Sign an Ethereum message only following the EIP 191 specification and
         using your Trezor device. You will need to follow the prompts on the device
@@ -105,9 +88,9 @@ class TrezorAccountClient:
             self._client, parse_hdpath(self._account_hd_path.path), message
         )
 
-        return TrezorSignature(signature_bytes=ethereum_message_signature.signature)
+        return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
 
-    def sign_typed_data(self, domain_hash: bytes, message_hash: bytes) -> TrezorSignature:
+    def sign_typed_data(self, domain_hash: bytes, message_hash: bytes) -> Tuple[int, bytes, bytes]:
         """
         Sign an Ethereum message following the EIP 712 specification.
         """
@@ -115,25 +98,49 @@ class TrezorAccountClient:
             self._client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
         )
 
-        return TrezorSignature(signature_bytes=ethereum_typed_data_signature.signature)
+        return extract_signature_vrs_bytes(signature_bytes=ethereum_typed_data_signature.signature)
 
-    def sign_transaction(self, txn: Dict[Any, Any]) -> TrezorSignature:
-        # Unexpected keyword type
-        txn.pop("type")
+    def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
+        tx_type = txn["type"]
 
-        tuple_reply = ethereum.sign_tx(
-            self._client, parse_hdpath(self._account_hd_path.path), **txn
-        )
+        if isinstance(tx_type, TransactionType.STATIC):
+            tuple_reply = ethereum.sign_tx(
+                self._client,
+                parse_hdpath(self._account_hd_path.path),
+                nonce=txn["nonce"],
+                gas_price=txn["gas_price"],
+                gas_limit=txn["gas_limit"],
+                to=txn["receiver"],
+                value=txn["value"],
+                data=txn.get("data"),
+                chain_id=txn.get("chain_id"),
+                tx_type=tx_type,
+            )
+        elif isinstance(tx_type, TransactionType.DYNAMIC):
+            tuple_reply = ethereum.sign_tx_eip1559(
+                self._client,
+                parse_hdpath(self._account_hd_path.path),
+                nonce=txn["nonce"],
+                gas_limit=txn["gas_limit"],
+                to=txn["receiver"],
+                value=txn["value"],
+                data=txn.get("data"),
+                chain_id=txn["chain_id"],
+                max_gas_fee=txn["max_fee"],
+                max_priority_fee=txn["max_priority_fee"],
+                access_list=txn.get("access_list"),
+            )
+        else:
+            raise TrezorAccountException(message=f"Message type {tx_type} is not supported.")
 
-        return TrezorSignature(
-            v=tuple_reply[0],
-            r=tuple_reply[1],
-            s=tuple_reply[2],
+        return (
+            tuple_reply[0],
+            tuple_reply[1],
+            tuple_reply[2],
         )
 
 
 __all__ = [
     "TrezorClient",
     "TrezorAccountClient",
-    "TrezorSignature",
 ]
