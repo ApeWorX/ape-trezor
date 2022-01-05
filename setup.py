@@ -10,10 +10,10 @@ extras_require = {
         "hypothesis>=6.2.0,<7.0",  # Strategy-based fuzzer
     ],
     "lint": [
-        "black>=20.8b1,<21.0",  # auto-formatter and linter
-        "mypy>=0.800,<1.0",  # Static type analyzer
+        "black>=21.10b0,<22.0",  # auto-formatter and linter
+        "mypy>=0.910,<1.0",  # Static type analyzer
         "flake8>=3.8.3,<4.0",  # Style linter
-        "isort>=5.7.0,<6.0",  # Import sorting linter
+        "isort>=5.9.3,<6.0",  # Import sorting linter
     ],
     "doc": [
         "Sphinx>=3.4.3,<4",  # Documentation generator
@@ -60,8 +60,10 @@ setup(
     include_package_data=True,
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "eth-ape>=0.1.0a20,<0.2.0",
-        "trezor>=0.12.2",
+        "eth-ape>=0.1.0b3",
+        "eth-account>=0.5.6,<0.6.0",
+        "eth-typing>=2.2.2",
+        "trezor>=0.13.0",
     ],  # NOTE: Add 3rd party libraries here
     entry_points={
         "ape_cli_subcommands": [
@@ -77,7 +79,7 @@ setup(
     packages=find_packages(exclude=["tests", "tests.*"]),
     package_data={"ape_trezor": ["py.typed"]},
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
