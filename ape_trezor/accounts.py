@@ -86,7 +86,7 @@ class TrezorAccount(AccountAPI):
 
         if version == b"E":
             signed_msg = self._client.sign_personal_message(msg.body)
-        elif version == b"0x01":
+        elif version == b"\x01":
             signed_msg = self._client.sign_typed_data(msg.header, msg.body)
         else:
             raise TrezorSigningError(
