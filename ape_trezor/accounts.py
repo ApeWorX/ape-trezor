@@ -78,8 +78,11 @@ class TrezorAccount(AccountAPI):
 
         if version == b"E":
             signed_msg = self._client.sign_personal_message(msg.body)
-        elif version == b"\x01":
-            signed_msg = self._client.sign_typed_data(msg.header, msg.body)
+
+        # TODO: Uncomment when Trezor has released the EIP 712 update
+        # elif version == b"\x01":
+        #     signed_msg = self._client.sign_typed_data(msg.header, msg.body)
+
         else:
             raise TrezorSigningError(
                 f"Unsupported message-signing specification, (version={version!r})"

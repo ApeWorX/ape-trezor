@@ -63,7 +63,7 @@ setup(
         "eth-ape>=0.1.0b3",
         "eth-account>=0.5.6,<0.6.0",
         "eth-typing>=2.2.2",
-        "trezor>=0.12.2",
+        "trezor>=0.13.0",
     ],  # NOTE: Add 3rd party libraries here
     entry_points={
         "ape_cli_subcommands": [

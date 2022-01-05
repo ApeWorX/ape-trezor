@@ -49,7 +49,7 @@ def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, byt
     if signature_bytes is None:
         raise TrezorClientError("No data in signature bytes.")
 
-    return signature_bytes[0], signature_bytes[1:33], signature_bytes[33:65]
+    return signature_bytes[-1], signature_bytes[:32], signature_bytes[32:64]
 
 
 class TrezorAccountClient:
@@ -90,15 +90,19 @@ class TrezorAccountClient:
 
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
 
-    def sign_typed_data(self, domain_hash: bytes, message_hash: bytes) -> Tuple[int, bytes, bytes]:
-        """
-        Sign an Ethereum message following the EIP 712 specification.
-        """
-        ethereum_typed_data_signature = ethereum.sign_typed_data_hash(
-            self._client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
-        )
+    # TODO: Uncomment when Trezor has released the EIP 712 update
+    # def sign_typed_data(self, domain_hash: bytes, message_hash: bytes)
+    # -> Tuple[int, bytes, bytes]:
+    #     """
+    #     Sign an Ethereum message following the EIP 712 specification.
+    #     """
+    #     ethereum_typed_data_signature = ethereum.sign_typed_data_hash(
+    #         self._client, parse_hdpath(self._account_hd_path.path),
+    # domain_hash, message_hash
+    #     )
 
-        return extract_signature_vrs_bytes(signature_bytes=ethereum_typed_data_signature.signature)
+    #     return extract_signature_vrs_bytes(
+    # signature_bytes=ethereum_typed_data_signature.signature)
 
     def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
         tx_type = txn["type"]
