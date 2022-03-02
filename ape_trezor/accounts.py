@@ -28,7 +28,7 @@ class AccountContainer(AccountContainerAPI):
     @property
     def accounts(self) -> Iterator[AccountAPI]:
         for account_file in self._account_files:
-            yield TrezorAccount(container=self, account_file_path=account_file)  # type: ignore
+            yield TrezorAccount(account_file_path=account_file)  # type: ignore
 
     def save_account(self, alias: str, address: str, hd_path: str):
         """
