@@ -1,5 +1,3 @@
-from typing import List
-
 import click
 from ape import accounts
 from ape.cli import (
@@ -30,7 +28,7 @@ def cli():
 def list(cli_ctx):
     """List the Trezor accounts in your ape configuration"""
 
-    trezor_accounts = _get_trezor_accounts()
+    trezor_accounts = accounts.get_accounts_by_type(type_=TrezorAccount)
 
     if len(trezor_accounts) == 0:
         cli_ctx.logger.warning("No accounts found.")
@@ -45,10 +43,6 @@ def list(cli_ctx):
         alias_display = f" (alias: '{account.alias}')" if account.alias else ""
         hd_path_display = f" (hd-path: '{account.hdpath}')" if account.hdpath else ""
         click.echo(f"  {account.address}{alias_display}{hd_path_display}")
-
-
-def _get_trezor_accounts() -> List[TrezorAccount]:
-    return [a for a in accounts if isinstance(a, TrezorAccount)]
 
 
 @cli.command()
@@ -88,7 +82,7 @@ def delete_all(cli_ctx, skip_confirmation):
     """Remove all trezor accounts from your ape configuration"""
 
     container = accounts.containers.get("trezor")
-    trezor_accounts = _get_trezor_accounts()
+    trezor_accounts = accounts.get_accounts_by_type(type_=TrezorAccount)
     if len(trezor_accounts) == 0:
         cli_ctx.logger.warning("No accounts found.")
         return

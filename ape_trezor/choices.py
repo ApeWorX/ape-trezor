@@ -22,7 +22,7 @@ class AddressPromptChoice(PromptChoice):
         index_offset: int = 0,
         page_size: int = DEFAULT_PAGE_SIZE,
     ):
-        self._client = client
+        self.client = client
         self._hd_base_path = hd_base_pth
         self._index_offset = index_offset
         self._page_size = page_size
@@ -96,4 +96,4 @@ class AddressPromptChoice(PromptChoice):
         self.choices = [self._get_address(i) for i in index_range]
 
     def _get_address(self, account_id: int) -> str:
-        return self._client.get_account_path(account_id)
+        return self.client.get_account_path(account_id)
