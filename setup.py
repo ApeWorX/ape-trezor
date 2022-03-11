@@ -70,7 +70,7 @@ setup(
             "ape_trezor=ape_trezor._cli:cli",
         ],
     },
-    python_requires=">=3.7,<4",
+    python_requires=">=3.7.2,<4",
     extras_require=extras_require,
     py_modules=["ape_trezor"],
     license="Apache-2.0",
