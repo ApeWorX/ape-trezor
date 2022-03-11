@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 from ape.api.accounts import AccountAPI, AccountContainerAPI, TransactionAPI
-from ape.convert import to_address
 from ape.types import AddressType, MessageSignature, TransactionSignature
+from ape.utils import to_address
 from eth_account.messages import SignableMessage
 
 from ape_trezor.client import TrezorAccountClient
