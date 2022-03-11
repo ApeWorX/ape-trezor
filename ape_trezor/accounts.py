@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 from ape.api.accounts import AccountAPI, AccountContainerAPI, TransactionAPI
-from ape.convert import to_address
 from ape.types import AddressType, MessageSignature, TransactionSignature
+from ape.utils import to_address
 from eth_account.messages import SignableMessage
 
 from ape_trezor.client import TrezorAccountClient
@@ -25,9 +25,10 @@ class AccountContainer(AccountContainerAPI):
     def __len__(self) -> int:
         return len([*self._account_files])
 
-    def __iter__(self) -> Iterator[AccountAPI]:
+    @property
+    def accounts(self) -> Iterator[AccountAPI]:
         for account_file in self._account_files:
-            yield TrezorAccount(self, account_file)  # type: ignore
+            yield TrezorAccount(account_file_path=account_file)  # type: ignore
 
     def save_account(self, alias: str, address: str, hd_path: str):
         """
@@ -45,14 +46,14 @@ class AccountContainer(AccountContainerAPI):
 
 
 class TrezorAccount(AccountAPI):
-    _account_file_path: Path
+    account_file_path: Path
 
     # Optional because it's lazily loaded
-    _account_client: Optional[TrezorAccountClient] = None
+    account_client: Optional[TrezorAccountClient] = None
 
     @property
     def alias(self) -> str:
-        return self._account_file_path.stem
+        return self.account_file_path.stem
 
     @property
     def address(self) -> AddressType:
@@ -65,23 +66,23 @@ class TrezorAccount(AccountAPI):
 
     @property
     def account_file(self) -> dict:
-        return json.loads(self._account_file_path.read_text())
+        return json.loads(self.account_file_path.read_text())
 
     @property
-    def _client(self) -> TrezorAccountClient:
-        if self._account_client is None:
-            self._account_client = TrezorAccountClient(self.address, self.hdpath)
-        return self._account_client
+    def client(self) -> TrezorAccountClient:
+        if self.account_client is None:
+            self.account_client = TrezorAccountClient(self.address, self.hdpath)
+        return self.account_client
 
     def sign_message(self, msg: SignableMessage) -> Optional[MessageSignature]:
         version = msg.version
 
         if version == b"E":
-            signed_msg = self._client.sign_personal_message(msg.body)
+            signed_msg = self.client.sign_personal_message(msg.body)
 
         # TODO: Uncomment when Trezor has released the EIP 712 update
         # elif version == b"\x01":
-        #     signed_msg = self._client.sign_typed_data(msg.header, msg.body)
+        #     signed_msg = self.client.sign_typed_data(msg.header, msg.body)
 
         else:
             raise TrezorSigningError(
@@ -91,6 +92,6 @@ class TrezorAccount(AccountAPI):
         return MessageSignature(*signed_msg)  # type: ignore
 
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionSignature]:
-        signed_txn = self._client.sign_transaction(txn.as_dict())
+        signed_txn = self.client.sign_transaction(txn.dict())
 
         return TransactionSignature(*signed_txn)  # type: ignore

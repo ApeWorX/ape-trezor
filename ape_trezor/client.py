@@ -23,7 +23,7 @@ class TrezorClient:
 
     def __init__(self, hd_root_path: HDBasePath):
         try:
-            self._client = get_default_client()
+            self.client = get_default_client()
         except TransportException:
             raise TrezorClientConnectionError()
         # Handles an unhandled usb exception in Trezor transport
@@ -35,7 +35,7 @@ class TrezorClient:
     def get_account_path(self, account_id: int) -> str:
         account_path = str(self._hd_root_path.get_account_path(account_id))
         try:
-            return ethereum.get_address(self._client, parse_hdpath(account_path))
+            return ethereum.get_address(self.client, parse_hdpath(account_path))
         except (PinException, TrezorFailure) as exc:
             message = "You have entered an invalid PIN."
             raise TrezorAccountException(message) from exc
@@ -64,7 +64,7 @@ class TrezorAccountClient:
         account_hd_path: HDPath,
     ):
         try:
-            self._client = get_default_client()
+            self.client = get_default_client()
         except TransportException:
             raise TrezorClientConnectionError()
 
@@ -85,7 +85,7 @@ class TrezorAccountClient:
         to validate the message data.
         """
         ethereum_message_signature = ethereum.sign_message(
-            self._client, parse_hdpath(self._account_hd_path.path), message
+            self.client, parse_hdpath(self._account_hd_path.path), message
         )
 
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
@@ -97,19 +97,18 @@ class TrezorAccountClient:
     #     Sign an Ethereum message following the EIP 712 specification.
     #     """
     #     ethereum_typed_data_signature = ethereum.sign_typed_data_hash(
-    #         self._client, parse_hdpath(self._account_hd_path.path),
-    # domain_hash, message_hash
+    #         self.client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
     #     )
 
     #     return extract_signature_vrs_bytes(
-    # signature_bytes=ethereum_typed_data_signature.signature)
+    #       signature_bytes=ethereum_typed_data_signature.signature)
 
     def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
         tx_type = txn["type"]
 
         if isinstance(tx_type, TransactionType.STATIC):
             tuple_reply = ethereum.sign_tx(
-                self._client,
+                self.client,
                 parse_hdpath(self._account_hd_path.path),
                 nonce=txn["nonce"],
                 gas_price=txn["gas_price"],
@@ -122,7 +121,7 @@ class TrezorAccountClient:
             )
         elif isinstance(tx_type, TransactionType.DYNAMIC):
             tuple_reply = ethereum.sign_tx_eip1559(
-                self._client,
+                self.client,
                 parse_hdpath(self._account_hd_path.path),
                 nonce=txn["nonce"],
                 gas_limit=txn["gas_limit"],
@@ -135,7 +134,7 @@ class TrezorAccountClient:
                 access_list=txn.get("access_list"),
             )
         else:
-            raise TrezorAccountException(message=f"Message type {tx_type} is not supported.")
+            raise TrezorAccountException(f"Message type {tx_type} is not supported.")
 
         return (
             tuple_reply[0],
