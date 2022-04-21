@@ -4,7 +4,6 @@ from typing import Iterator, Optional
 
 from ape.api.accounts import AccountAPI, AccountContainerAPI, TransactionAPI
 from ape.types import AddressType, MessageSignature, TransactionSignature
-from ape.utils import to_address
 from eth_account.messages import SignableMessage
 
 from ape_trezor.client import TrezorAccountClient
@@ -57,7 +56,7 @@ class TrezorAccount(AccountAPI):
 
     @property
     def address(self) -> AddressType:
-        return to_address(self.account_file["address"])
+        return self.provider.network.ecosystem.decode_address(self.account_file["address"])
 
     @property
     def hdpath(self) -> HDPath:

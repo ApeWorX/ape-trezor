@@ -61,9 +61,9 @@ jobs:
         - name: Install Dependencies
           run: pip install .[test]
 
-        - name: Run Tests
-          run: pytest -m "not fuzzing"
-
+#        - name: Run Tests
+#          run: pytest -m "not fuzzing"
+#
 # NOTE: uncomment this block after you've marked tests with @pytest.mark.fuzzing
 #    fuzzing:
 #        runs-on: ubuntu-latest
