@@ -63,6 +63,7 @@ setup(
         "eth-ape>=0.2.1,<0.3.0",
         "eth-account>=0.5.6,<0.6.0",
         "eth-typing>=2.2.2",
+        "click>=8.1.0",
         "trezor>=0.13.0",
     ],  # NOTE: Add 3rd party libraries here
     entry_points={
