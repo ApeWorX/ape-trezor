@@ -4,7 +4,7 @@ Ape Trezor is a plugin for [Ape Framework](https://github.com/ApeWorx/ape) which
 
 ## Dependencies
 
-* [python3](https://www.python.org/downloads) version 3.6 or greater, python3-dev
+* [python3](https://www.python.org/downloads) version 3.7.2 or greater, python3-dev
 
 ## Installation
 
@@ -41,8 +41,7 @@ the output of `verify` should be the same address as the account `$account_name`
 
 ## Development
 
-This project is in development and should be considered a beta.
-Things might not be in their final state and breaking changes may occur.
+Please see the [contributing guide](CONTRIBUTING.md) to learn more how to contribute to this project.
 Comments, questions, criticisms and pull requests are welcomed.
 
 ## License
