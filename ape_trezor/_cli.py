@@ -25,8 +25,8 @@ def cli():
 
 @cli.command("list")
 @ape_cli_context()
-def list(cli_ctx):
-    """List the Trezor accounts in your ape configuration"""
+def _list(cli_ctx):
+    """List your Trezor accounts in ape"""
 
     trezor_accounts = accounts.get_accounts_by_type(type_=TrezorAccount)
 
@@ -104,16 +104,15 @@ def delete_all(cli_ctx, skip_confirmation):
 def sign_message(cli_ctx, alias, message):
 
     if alias not in accounts.aliases:
-        cli_ctx.logger.warning(f"Account with alias '{alias}' does not exist.")
-        return
+        cli_ctx.abort(f"Account with alias '{alias}' does not exist.")
 
-    eip191message = encode_defunct(text=message)
+    eip191_message = encode_defunct(text=message)
     account = accounts.load(alias)
-    signature = account.sign_message(eip191message)
+    signature = account.sign_message(eip191_message)
     signature_bytes = signature.encode_rsv()
 
     # Verify signature
-    signer = Account.recover_message(eip191message, signature=signature_bytes)
+    signer = Account.recover_message(eip191_message, signature=signature_bytes)
     if signer != account.address:
         cli_ctx.abort(f"Signer resolves incorrectly, got {signer}, expected {account.address}.")
 

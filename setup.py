@@ -7,12 +7,14 @@ extras_require = {
         "pytest>=6.0,<7.0",  # Core testing package
         "pytest-xdist",  # multi-process runner
         "pytest-cov",  # Coverage analyzer plugin
+        "pytest-mock",  # For creating mocks
         "hypothesis>=6.2.0,<7.0",  # Strategy-based fuzzer
+        "eip712",  # Used for cleaner test cases
     ],
     "lint": [
         "black>=22.3.0,<23.0",  # auto-formatter and linter
-        "mypy>=0.950,<1.0",  # Static type analyzer
-        "flake8>=3.9.2,<4.0",  # Style linter
+        "mypy>=0.961,<1.0",  # Static type analyzer
+        "flake8>=4.0.1,<5.0",  # Style linter
         "isort>=5.10.1,<6.0",  # Import sorting linter
     ],
     "doc": [
@@ -60,12 +62,12 @@ setup(
     include_package_data=True,
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "eth-ape>=0.2.2,<0.3.0",
+        "eth-ape>=0.3.0,<0.4.0",
         "eth-account>=0.5.6,<0.6.0",
         "eth-typing>=2.2.2",
         "click>=8.1.0",
         "trezor>=0.13.0",
-    ],  # NOTE: Add 3rd party libraries here
+    ],
     entry_points={
         "ape_cli_subcommands": [
             "ape_trezor=ape_trezor._cli:cli",
