@@ -56,7 +56,7 @@ class TrezorAccount(AccountAPI):
 
     @property
     def address(self) -> AddressType:
-        return self.provider.network.ecosystem.decode_address(self.account_file["address"])
+        return self.network_manager.ethereum.decode_address(self.account_file["address"])
 
     @property
     def hdpath(self) -> HDPath:

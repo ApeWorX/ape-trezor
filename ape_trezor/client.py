@@ -2,6 +2,7 @@ from typing import Any, Dict, Tuple
 
 from eth_typing.evm import ChecksumAddress
 from trezorlib import ethereum  # type: ignore
+from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
 from trezorlib.messages import TransactionType  # type: ignore
@@ -21,21 +22,25 @@ class TrezorClient:
     This class is a client for the Trezor device.
     """
 
-    def __init__(self, hd_root_path: HDBasePath):
-        try:
-            self.client = get_default_client()
-        except TransportException:
-            raise TrezorClientConnectionError()
-        # Handles an unhandled usb exception in Trezor transport
-        except Exception as exc:
-            raise TrezorClientError(f"Error: {exc}")
+    def __init__(self, hd_root_path: HDBasePath, client: LibTrezorClient = None):
+        if not client:
+            try:
+                self.client = get_default_client()
+            except TransportException:
+                raise TrezorClientConnectionError()
+            # Handles an unhandled usb exception in Trezor transport
+            except Exception as exc:
+                raise TrezorClientError(f"Error: {exc}")
+        else:
+            self.client = client
 
         self._hd_root_path = hd_root_path
 
     def get_account_path(self, account_id: int) -> str:
         account_path = str(self._hd_root_path.get_account_path(account_id))
         try:
-            return ethereum.get_address(self.client, parse_hdpath(account_path))
+            message_type = ethereum.get_address(self.client, parse_hdpath(account_path))
+            return str(message_type)
         except (PinException, TrezorFailure) as exc:
             message = "You have entered an invalid PIN."
             raise TrezorAccountException(message) from exc
