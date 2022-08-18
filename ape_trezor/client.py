@@ -95,23 +95,20 @@ class TrezorAccountClient:
 
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
 
-    # TODO: Uncomment when Trezor has released the EIP 712 update
-    # def sign_typed_data(self, domain_hash: bytes, message_hash: bytes)
-    # -> Tuple[int, bytes, bytes]:
-    #     """
-    #     Sign an Ethereum message following the EIP 712 specification.
-    #     """
-    #     ethereum_typed_data_signature = ethereum.sign_typed_data_hash(
-    #         self.client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
-    #     )
+    def sign_typed_data(self, domain_hash: bytes, message_hash: bytes) -> Tuple[int, bytes, bytes]:
+        """
+        Sign an Ethereum message following the EIP 712 specification.
+        """
+        ethereum_typed_data_signature = ethereum.sign_typed_data_hash(
+            self.client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
+        )
 
-    #     return extract_signature_vrs_bytes(
-    #       signature_bytes=ethereum_typed_data_signature.signature)
+        return extract_signature_vrs_bytes(signature_bytes=ethereum_typed_data_signature.signature)
 
     def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
         tx_type = txn["type"]
 
-        if isinstance(tx_type, TransactionType.STATIC):
+        if isinstance(tx_type, type(TransactionType.STATIC)):
             tuple_reply = ethereum.sign_tx(
                 self.client,
                 parse_hdpath(self._account_hd_path.path),
@@ -124,7 +121,7 @@ class TrezorAccountClient:
                 chain_id=txn.get("chain_id"),
                 tx_type=tx_type,
             )
-        elif isinstance(tx_type, TransactionType.DYNAMIC):
+        elif isinstance(tx_type, type(TransactionType.DYNAMIC)):
             tuple_reply = ethereum.sign_tx_eip1559(
                 self.client,
                 parse_hdpath(self._account_hd_path.path),
