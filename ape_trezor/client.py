@@ -1,11 +1,11 @@
 from typing import Any, Dict, Tuple
 
+from ape_ethereum.transactions import TransactionType
 from eth_typing.evm import ChecksumAddress
 from trezorlib import ethereum  # type: ignore
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
-from trezorlib.messages import TransactionType  # type: ignore
 from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
