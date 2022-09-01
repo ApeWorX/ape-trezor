@@ -1,5 +1,6 @@
 from typing import Any, Dict, Tuple
 
+from ape_ethereum.transactions import TransactionType
 from eth_typing.evm import ChecksumAddress
 from trezorlib import ethereum  # type: ignore
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
@@ -94,18 +95,15 @@ class TrezorAccountClient:
 
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
 
-    # TODO: Uncomment when Trezor has released the EIP 712 update
-    # def sign_typed_data(self, domain_hash: bytes, message_hash: bytes)
-    # -> Tuple[int, bytes, bytes]:
-    #     """
-    #     Sign an Ethereum message following the EIP 712 specification.
-    #     """
-    #     ethereum_typed_data_signature = ethereum.sign_typed_data_hash(
-    #         self.client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
-    #     )
+    def sign_typed_data(self, domain_hash: bytes, message_hash: bytes) -> Tuple[int, bytes, bytes]:
+        """
+        Sign an Ethereum message following the EIP 712 specification.
+        """
+        ethereum_typed_data_signature = ethereum.sign_typed_data_hash(
+            self.client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
+        )
 
-    #     return extract_signature_vrs_bytes(
-    #       signature_bytes=ethereum_typed_data_signature.signature)
+        return extract_signature_vrs_bytes(signature_bytes=ethereum_typed_data_signature.signature)
 
     def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
         tx_type = txn["type"]

@@ -62,11 +62,11 @@ setup(
     include_package_data=True,
     install_requires=[
         "importlib-metadata ; python_version<'3.8'",
-        "eth-ape>=0.4.0,<0.5.0",
+        "eth-ape>=0.4.4,<0.5.0",
         "eth-account",  # Use same version as eth-ape
-        "eth-typing>=2.2.2",
-        "click>=8.1.0",
-        "trezor>=0.13.0",
+        "eth-typing>=3.1.0",  # Influenced by eth-ape so no upper pin
+        "click",  # Use same version as eth-ape
+        "trezor==0.13.3",
     ],
     entry_points={
         "ape_cli_subcommands": [
