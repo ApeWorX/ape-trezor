@@ -108,32 +108,32 @@ class TrezorAccountClient:
     def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
         tx_type = txn["type"]
 
-        if isinstance(tx_type, type(TransactionType.STATIC)):
+        if tx_type == "0x00":  # Static transaction type
             tuple_reply = ethereum.sign_tx(
                 self.client,
                 parse_hdpath(self._account_hd_path.path),
                 nonce=txn["nonce"],
-                gas_price=txn["gas_price"],
-                gas_limit=txn["gas_limit"],
-                to=txn["receiver"],
+                gas_price=txn["maxFeePerGas"],
+                gas_limit=txn["gas"],
+                to=txn.get("receiver"),
                 value=txn["value"],
                 data=txn.get("data"),
-                chain_id=txn.get("chain_id"),
+                chain_id=txn.get("chainId"),
                 tx_type=tx_type,
             )
-        elif isinstance(tx_type, type(TransactionType.DYNAMIC)):
+        elif tx_type == "0x02":  # Dynamic transaction type
             tuple_reply = ethereum.sign_tx_eip1559(
                 self.client,
                 parse_hdpath(self._account_hd_path.path),
                 nonce=txn["nonce"],
-                gas_limit=txn["gas_limit"],
-                to=txn["receiver"],
+                gas_limit=txn["gas"],
+                to=txn.get("receiver"),
                 value=txn["value"],
                 data=txn.get("data"),
-                chain_id=txn["chain_id"],
-                max_gas_fee=txn["max_fee"],
-                max_priority_fee=txn["max_priority_fee"],
-                access_list=txn.get("access_list"),
+                chain_id=txn["chainId"],
+                max_gas_fee=txn["maxFeePerGas"],
+                max_priority_fee=txn["maxPriorityFeePerGas"],
+                access_list=txn.get("accessList"),
             )
         else:
             raise TrezorAccountException(f"Message type {tx_type} is not supported.")
