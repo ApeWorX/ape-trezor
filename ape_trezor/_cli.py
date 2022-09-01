@@ -29,14 +29,14 @@ def _list(cli_ctx):
     """List your Trezor accounts in ape"""
 
     trezor_accounts = accounts.get_accounts_by_type(type_=TrezorAccount)
+    num_of_accts = len(trezor_accounts)
 
-    if len(trezor_accounts) == 0:
-        cli_ctx.logger.warning("No accounts found.")
+    if num_of_accts == 0:
+        cli_ctx.logger.warning("No Trezor accounts found.")
         return
 
-    num_accounts = len(accounts)
-    header = f"Found {num_accounts} account"
-    header += "s:" if num_accounts > 1 else ":"
+    header = f"Found {num_of_accts} Trezor account"
+    header += "s:" if num_of_accts > 1 else ":"
     click.echo(header)
 
     for account in trezor_accounts:
