@@ -66,7 +66,7 @@ setup(
         "eth-account",  # Use same version as eth-ape
         "eth-typing>=3.1.0",  # Influenced by eth-ape so no upper pin
         "click",  # Use same version as eth-ape
-        "trezor==0.13.3",
+        "trezor>=0.13.3,<0.14",
     ],
     entry_points={
         "ape_cli_subcommands": [
