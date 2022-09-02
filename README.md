@@ -28,16 +28,50 @@ python3 setup.py install
 
 ## Quick Usage
 
-```bash
-ape trezor add [PICK AN ALIAS]
-```
-you can now load the account like any other account in Ape console and then use it to sign transactions.
+You must have the Trezor USB device connected.
+
+Then, add accounts:
 
 ```bash
-ape trezor sign-message [YOUR TREZOR ALIAS] "hello world"
-ape trezor verify "hello world"
+ape trezor add <alias>
 ```
-the output of `verify` should be the same address as the account `$account_name`
+
+Trezor accounts have the following capabilities in `ape`:
+
+1. Can sign transactions
+2. Can sign messages using the default EIP-191 specification
+
+
+To list just your Trezor accounts in `ape`, do:
+
+```bash
+ape trezor list
+```
+
+## Remove accounts
+
+You can also remove accounts:
+
+```bash
+ape trezor delete <alias>
+ape trezor delete-all
+```
+
+## Sign Messages
+
+You can sign messages with your accounts:
+
+```bash
+ape trezor sign-message <alias> "hello world"
+```
+
+## Verify Messages
+
+You can also verify a message with a signature:
+
+```bash
+ape trezor verify-message "hello world" <signature>
+```
 
 ## Development
 
