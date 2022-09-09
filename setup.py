@@ -61,10 +61,9 @@ setup(
     url="https://github.com/ApeWorX/ape-trezor",
     include_package_data=True,
     install_requires=[
-        "importlib-metadata ; python_version<'3.8'",
-        "eth-ape>=0.4.4,<0.5.0",
+        "eth-ape>=0.5.0,<0.6",
         "eth-account",  # Use same version as eth-ape
-        "eth-typing>=3.1.0",  # Influenced by eth-ape so no upper pin
+        "eth-typing>=3.1",  # Influenced by eth-ape so no upper pin
         "click",  # Use same version as eth-ape
         "trezor>=0.13.3,<0.14",
     ],
@@ -73,7 +72,7 @@ setup(
             "ape_trezor=ape_trezor._cli:cli",
         ],
     },
-    python_requires=">=3.7.2,<4",
+    python_requires=">=3.8,<4",
     extras_require=extras_require,
     py_modules=["ape_trezor"],
     license="Apache-2.0",
@@ -89,7 +88,6 @@ setup(
         "Operating System :: MacOS",
         "Operating System :: POSIX",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
