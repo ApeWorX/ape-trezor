@@ -61,9 +61,9 @@ setup(
     url="https://github.com/ApeWorX/ape-trezor",
     include_package_data=True,
     install_requires=[
-        "eth-ape>=0.5.0,<0.6.0",
+        "eth-ape>=0.5.0,<0.6",
         "eth-account",  # Use same version as eth-ape
-        "eth-typing>=3.1.0",  # Influenced by eth-ape so no upper pin
+        "eth-typing>=3.1",  # Influenced by eth-ape so no upper pin
         "click",  # Use same version as eth-ape
         "trezor>=0.13.3,<0.14",
     ],
