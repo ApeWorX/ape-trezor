@@ -39,9 +39,8 @@ class TrezorClient:
 
     def get_account_path(self, account_id: int) -> str:
         account_path = self._hd_root_path.get_account_path(account_id)
-        address = account_path.address
         try:
-            message_type = get_address(self.client, address)
+            message_type = get_address(self.client, account_path.address_n)
             return str(message_type)
 
         except PinException as err:
@@ -99,7 +98,7 @@ class TrezorAccountClient:
         to validate the message data.
         """
         ethereum_message_signature = sign_message(
-            self.client, self._account_hd_path.address, message
+            self.client, self._account_hd_path.address_n, message
         )
 
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
@@ -123,7 +122,7 @@ class TrezorAccountClient:
         if tx_type == "0x00":  # Static transaction type
             tuple_reply = sign_tx(
                 self.client,
-                self._account_hd_path.address,
+                self._account_hd_path.address_n,
                 nonce=txn["nonce"],
                 gas_price=txn["maxFeePerGas"],
                 gas_limit=txn["gas"],
@@ -140,7 +139,7 @@ class TrezorAccountClient:
 
             tuple_reply = sign_tx_eip1559(
                 self.client,
-                self._account_hd_path.address,
+                self._account_hd_path.address_n,
                 nonce=txn["nonce"],
                 gas_limit=txn["gas"],
                 to=txn.get("receiver", ""),

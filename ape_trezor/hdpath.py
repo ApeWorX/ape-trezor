@@ -20,7 +20,7 @@ class HDPath:
         return self.path
 
     @cached_property
-    def address(self) -> Address:
+    def address_n(self) -> Address:
         return parse_path(self.path)
 
 
