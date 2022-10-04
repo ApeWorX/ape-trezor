@@ -9,7 +9,9 @@ from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
 from ape_trezor.exceptions import (
-    TrezorAccountException,
+    InvalidHDPathError,
+    InvalidPinError,
+    TrezorAccountError,
     TrezorClientConnectionError,
     TrezorClientError,
 )
@@ -24,7 +26,7 @@ class TrezorClient:
     def __init__(self, hd_root_path: HDBasePath, client: LibTrezorClient = None):
         if not client:
             try:
-                self.client = get_default_client()
+                self.client = get_default_client(path=str(hd_root_path))
             except TransportException:
                 raise TrezorClientConnectionError()
             # Handles an unhandled usb exception in Trezor transport
@@ -40,9 +42,14 @@ class TrezorClient:
         try:
             message_type = ethereum.get_address(self.client, parse_hdpath(account_path))
             return str(message_type)
-        except (PinException, TrezorFailure) as exc:
-            message = "You have entered an invalid PIN."
-            raise TrezorAccountException(message) from exc
+        except PinException as err:
+            raise InvalidPinError() from err
+
+        except TrezorFailure as err:
+            if "forbidden key path" in str(err).lower():
+                raise InvalidHDPathError(account_path)
+
+            raise TrezorClientError(str(err), status=err.code.value) from err
 
 
 def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, bytes]:
@@ -68,7 +75,7 @@ class TrezorAccountClient:
         account_hd_path: HDPath,
     ):
         try:
-            self.client = get_default_client()
+            self.client = get_default_client(path=str(account_hd_path))
         except TransportException:
             raise TrezorClientConnectionError()
 
@@ -138,7 +145,7 @@ class TrezorAccountClient:
                 access_list=txn.get("accessList"),
             )
         else:
-            raise TrezorAccountException(f"Message type {tx_type} is not supported.")
+            raise TrezorAccountError(f"Message type {tx_type} is not supported.")
 
         return (
             tuple_reply[0],
