@@ -17,4 +17,4 @@ def test_get_user_selected_account(mocker, mock_client, address):
     mock_prompt.side_effect = _side_effect
     selected_address, hdpath = choices.get_user_selected_account()
     assert selected_address == address
-    assert str(hdpath) == "m/44'/60'/0'/0/1"
+    assert str(hdpath) == "m/44'/1'/0'/0/1"

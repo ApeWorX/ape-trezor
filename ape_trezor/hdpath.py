@@ -23,7 +23,7 @@ class HDBasePath(HDPath):
     """
 
     def __init__(self, base_path=None):
-        base_path = base_path or "m/44'/60'/0'/0"
+        base_path = base_path or "m/44'/1'/0'/0"
         base_path = base_path.rstrip("/")
         super().__init__(base_path)
 

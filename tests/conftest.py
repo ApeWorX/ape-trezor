@@ -23,7 +23,7 @@ def config():
 
 @pytest.fixture
 def key_file_data():
-    return {"address": "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", "hdpath": "m/44'/60'/0'/0/0"}
+    return {"address": "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", "hdpath": "m/44'/1'/0'/0/0"}
 
 
 @pytest.fixture

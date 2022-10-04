@@ -36,6 +36,8 @@ Then, add accounts:
 ape trezor add <alias>
 ```
 
+The default [hierarchical deterministic derivation path](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) is `m/44'/1'/0'/0`, which is Trezor's default.
+
 Trezor accounts have the following capabilities in `ape`:
 
 1. Can sign transactions
