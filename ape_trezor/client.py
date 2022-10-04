@@ -43,6 +43,7 @@ class TrezorClient:
         try:
             message_type = get_address(self.client, address)
             return str(message_type)
+
         except PinException as err:
             raise InvalidPinError() from err
 
