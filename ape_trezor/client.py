@@ -5,7 +5,6 @@ from trezorlib import ethereum  # type: ignore
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
-from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
 from ape_trezor.exceptions import (
@@ -36,9 +35,9 @@ class TrezorClient:
         self._hd_root_path = hd_root_path
 
     def get_account_path(self, account_id: int) -> str:
-        account_path = str(self._hd_root_path.get_account_path(account_id))
+        address = self._hd_root_path.get_account_path(account_id).address
         try:
-            message_type = ethereum.get_address(self.client, parse_hdpath(account_path))
+            message_type = ethereum.get_address(self.client, address)
             return str(message_type)
         except (PinException, TrezorFailure) as exc:
             message = "You have entered an invalid PIN."
@@ -89,7 +88,7 @@ class TrezorAccountClient:
         to validate the message data.
         """
         ethereum_message_signature = ethereum.sign_message(
-            self.client, parse_hdpath(self._account_hd_path.path), message
+            self.client, self._account_hd_path.address, message
         )
 
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
@@ -113,7 +112,7 @@ class TrezorAccountClient:
         if tx_type == "0x00":  # Static transaction type
             tuple_reply = ethereum.sign_tx(
                 self.client,
-                parse_hdpath(self._account_hd_path.path),
+                self._account_hd_path.address,
                 nonce=txn["nonce"],
                 gas_price=txn["maxFeePerGas"],
                 gas_limit=txn["gas"],
@@ -126,7 +125,7 @@ class TrezorAccountClient:
         elif tx_type == "0x02":  # Dynamic transaction type
             tuple_reply = ethereum.sign_tx_eip1559(
                 self.client,
-                parse_hdpath(self._account_hd_path.path),
+                self._account_hd_path.address,
                 nonce=txn["nonce"],
                 gas_limit=txn["gas"],
                 to=txn.get("receiver"),
