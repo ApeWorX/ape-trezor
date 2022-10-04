@@ -1,9 +1,9 @@
 from typing import Any, Dict, Tuple
 
 from eth_typing.evm import ChecksumAddress
-from trezorlib import ethereum  # type: ignore
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
+from trezorlib.ethereum import get_address, sign_message, sign_tx, sign_tx_eip1559  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
@@ -37,16 +37,17 @@ class TrezorClient:
         self._hd_root_path = hd_root_path
 
     def get_account_path(self, account_id: int) -> str:
-        address = self._hd_root_path.get_account_path(account_id).address
+        account_path = self._hd_root_path.get_account_path(account_id)
+        address = account_path.address
         try:
-            message_type = ethereum.get_address(self.client, address)
+            message_type = get_address(self.client, address)
             return str(message_type)
         except PinException as err:
             raise InvalidPinError() from err
 
         except TrezorFailure as err:
             if "forbidden key path" in str(err).lower():
-                raise InvalidHDPathError(account_path)
+                raise InvalidHDPathError(str(account_path))
 
             raise TrezorClientError(str(err), status=err.code.value) from err
 
@@ -94,7 +95,7 @@ class TrezorAccountClient:
         using your Trezor device. You will need to follow the prompts on the device
         to validate the message data.
         """
-        ethereum_message_signature = ethereum.sign_message(
+        ethereum_message_signature = sign_message(
             self.client, self._account_hd_path.address, message
         )
 
@@ -117,7 +118,7 @@ class TrezorAccountClient:
         tx_type = txn["type"]
 
         if tx_type == "0x00":  # Static transaction type
-            tuple_reply = ethereum.sign_tx(
+            tuple_reply = sign_tx(
                 self.client,
                 self._account_hd_path.address,
                 nonce=txn["nonce"],
@@ -130,7 +131,7 @@ class TrezorAccountClient:
                 tx_type=tx_type,
             )
         elif tx_type == "0x02":  # Dynamic transaction type
-            tuple_reply = ethereum.sign_tx_eip1559(
+            tuple_reply = sign_tx_eip1559(
                 self.client,
                 self._account_hd_path.address,
                 nonce=txn["nonce"],
