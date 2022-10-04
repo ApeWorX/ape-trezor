@@ -127,7 +127,7 @@ class TrezorAccountClient(ManagerAccessMixin):
             if isinstance(tx_type, int):
                 tx_type = HexBytes(tx_type).hex()
             elif isinstance(tx_type, bytes):
-                tx_type = tx_type.hex()
+                tx_type = HexBytes(tx_type).hex()
 
         # NOTE: `trezorlib` expects empty bytes when no data.
         data = txn.get("data") or b""
