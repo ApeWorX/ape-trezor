@@ -1,6 +1,7 @@
 from typing import Any, Dict, Tuple
 
 from eth_typing.evm import ChecksumAddress
+from hexbytes import HexBytes
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
 from trezorlib.ethereum import get_address, sign_message, sign_tx, sign_tx_eip1559  # type: ignore
@@ -49,7 +50,8 @@ class TrezorClient:
             if "forbidden key path" in str(err).lower():
                 raise InvalidHDPathError(str(account_path))
 
-            raise TrezorClientError(str(err), status=err.code.value) from err
+            code = 0 if not err.code else err.code.value
+            raise TrezorClientError(str(err), status=code) from err
 
 
 def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, bytes]:
@@ -124,21 +126,25 @@ class TrezorAccountClient:
                 nonce=txn["nonce"],
                 gas_price=txn["maxFeePerGas"],
                 gas_limit=txn["gas"],
-                to=txn.get("receiver"),
+                to=txn.get("receiver", ""),
                 value=txn["value"],
                 data=txn.get("data"),
                 chain_id=txn.get("chainId"),
                 tx_type=tx_type,
             )
         elif tx_type == "0x02":  # Dynamic transaction type
+            data = txn.get("data", b"")
+            if isinstance(data, str):
+                data = HexBytes(data)
+
             tuple_reply = sign_tx_eip1559(
                 self.client,
                 self._account_hd_path.address,
                 nonce=txn["nonce"],
                 gas_limit=txn["gas"],
-                to=txn.get("receiver"),
+                to=txn.get("receiver", ""),
                 value=txn["value"],
-                data=txn.get("data"),
+                data=data,
                 chain_id=txn["chainId"],
                 max_gas_fee=txn["maxFeePerGas"],
                 max_priority_fee=txn["maxPriorityFeePerGas"],

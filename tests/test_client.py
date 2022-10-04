@@ -61,5 +61,5 @@ class TestTrezorClient:
 def test_extract_signature_vrs_bytes(signature):
     v, r, s = extract_signature_vrs_bytes(signature)
     assert v == 27
-    assert r == HexBytes('0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409')
-    assert s == HexBytes('0x6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc')
+    assert r == HexBytes("0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409")
+    assert s == HexBytes("0x6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc")
