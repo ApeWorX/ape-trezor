@@ -1,5 +1,6 @@
 from typing import Any, Dict, Tuple
 
+from ape.utils import ManagerAccessMixin
 from eth_typing.evm import ChecksumAddress
 from hexbytes import HexBytes
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
@@ -65,21 +66,22 @@ def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, byt
     return signature_bytes[-1], signature_bytes[:32], signature_bytes[32:64]
 
 
-class TrezorAccountClient:
+class TrezorAccountClient(ManagerAccessMixin):
     """
     This class represents an account on the Trezor device when you know the full
     account HD path.
     """
 
     def __init__(
-        self,
-        address: ChecksumAddress,
-        account_hd_path: HDPath,
+        self, address: ChecksumAddress, account_hd_path: HDPath, client: LibTrezorClient = None
     ):
-        try:
-            self.client = get_default_client()
-        except TransportException:
-            raise TrezorClientConnectionError()
+        if not client:
+            try:
+                self.client = get_default_client()
+            except TransportException:
+                raise TrezorClientConnectionError()
+        else:
+            self.client = client
 
         self._address = address
         self._account_hd_path = account_hd_path
@@ -117,35 +119,51 @@ class TrezorAccountClient:
     #       signature_bytes=ethereum_typed_data_signature.signature)
 
     def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
-        tx_type = txn["type"]
+        if "type" not in txn and "gasPrice" in txn:
+            tx_type = "0x00"
+
+        else:
+            tx_type = txn.get("type", "0x00")
+            if isinstance(tx_type, int):
+                tx_type = HexBytes(tx_type).hex()
+            elif isinstance(tx_type, bytes):
+                tx_type = tx_type.hex()
+
+        # NOTE: `trezorlib` expects empty bytes when no data.
+        data = txn.get("data") or b""
+        if isinstance(data, str):
+            data = HexBytes(data)
+
+        # NOTE: When creating contracts, use `""` as `to=` field.
+        to_address = txn.get("to") or ""
+
+        # NOTE: Chain ID is required
+        chain_id = txn.get("chainId")
+        if not chain_id:
+            chain_id = self.provider.chain_id
 
         if tx_type == "0x00":  # Static transaction type
             tuple_reply = sign_tx(
                 self.client,
                 self._account_hd_path.address_n,
                 nonce=txn["nonce"],
-                gas_price=txn["maxFeePerGas"],
+                gas_price=txn["gasPrice"],
                 gas_limit=txn["gas"],
-                to=txn.get("receiver", ""),
+                to=to_address,
                 value=txn["value"],
-                data=txn.get("data"),
-                chain_id=txn.get("chainId"),
-                tx_type=tx_type,
+                data=data,
+                chain_id=chain_id,
             )
         elif tx_type == "0x02":  # Dynamic transaction type
-            data = txn.get("data", b"")
-            if isinstance(data, str):
-                data = HexBytes(data)
-
             tuple_reply = sign_tx_eip1559(
                 self.client,
                 self._account_hd_path.address_n,
                 nonce=txn["nonce"],
                 gas_limit=txn["gas"],
-                to=txn.get("receiver", ""),
+                to=to_address,
                 value=txn["value"],
                 data=data,
-                chain_id=txn["chainId"],
+                chain_id=chain_id,
                 max_gas_fee=txn["maxFeePerGas"],
                 max_priority_fee=txn["maxPriorityFeePerGas"],
                 access_list=txn.get("accessList"),
