@@ -1,7 +1,8 @@
 import ape
 import pytest
+from hexbytes import HexBytes
 
-from ape_trezor.client import TrezorClient
+from ape_trezor.client import TrezorClient, extract_signature_vrs_bytes
 from ape_trezor.hdpath import HDBasePath
 
 
@@ -37,6 +38,14 @@ def address():
     return ape.accounts.test_accounts[0].address
 
 
+@pytest.fixture
+def signature():
+    return HexBytes(
+        "0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409"
+        "6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc1b"
+    )
+
+
 class TestTrezorClient:
     def test_init_creates_client(self, patch_create_default_client, hd_path, mock_device_client):
         client = TrezorClient(hd_path)
@@ -47,3 +56,10 @@ class TestTrezorClient:
         mock_get_address.return_value = address
         actual = client.get_account_path(1)
         assert actual == address
+
+
+def test_extract_signature_vrs_bytes(signature):
+    v, r, s = extract_signature_vrs_bytes(signature)
+    assert v == 27
+    assert r == HexBytes('0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409')
+    assert s == HexBytes('0x6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc')
