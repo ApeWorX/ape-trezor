@@ -50,7 +50,7 @@ def _list(cli_ctx):
 @non_existing_alias_argument()
 @click.option(
     "--hd-path",
-    help="The Ethereum account derivation path prefix. Defaults to m/44'/60'/0'/0.",
+    help="The Ethereum account derivation path prefix (defaults to m/44'/60'/0'/0).",
     callback=lambda ctx, param, arg: HDBasePath(arg),
 )
 def add(cli_ctx, alias, hd_path):
