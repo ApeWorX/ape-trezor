@@ -1,6 +1,8 @@
 import ape
 import pytest
+from ape.logging import LogLevel
 from hexbytes import HexBytes
+from trezorlib.messages import SafetyCheckLevel  # type: ignore
 
 from ape_trezor.client import TrezorAccountClient, TrezorClient, extract_signature_vrs_bytes
 from ape_trezor.hdpath import HDBasePath, HDPath
@@ -44,6 +46,11 @@ def signature():
         "0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409"
         "6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc1b"
     )
+
+
+@pytest.fixture(autouse=True)
+def apply_settings_patch(mocker):
+    return mocker.patch("ape_trezor.client.apply_settings")
 
 
 CHAIN_ID = 4
@@ -165,3 +172,34 @@ class TestTrezorAccountClient:
             max_priority_fee=MAX_PRIORITY_FEE_PER_GAS,
             access_list=[],
         )
+
+    def test_sign_transaction_when_default_hd_path(
+        self,
+        mocker,
+        account_client,
+        account_hd_path,
+        dynamic_fee_transaction,
+        apply_settings_patch,
+        caplog,
+    ):
+        sign_eip1559_patch = mocker.patch("ape_trezor.client.sign_tx_eip1559")
+        apply_settings_patch = mocker.patch("ape_trezor.client.apply_settings")
+
+        with caplog.at_level(LogLevel.WARNING):
+            account_client.sign_transaction(dynamic_fee_transaction)
+
+        assert sign_eip1559_patch.call_count == 1
+        assert apply_settings_patch.call_count == 2
+        call_args = apply_settings_patch.call_args_list
+        assert call_args[0][0][0] == account_client.client
+        assert call_args[0][1]["safety_checks"] == SafetyCheckLevel.PromptTemporarily
+
+        assert call_args[1][0][0] == account_client.client
+        assert call_args[1][1]["safety_checks"] == SafetyCheckLevel.Strict
+
+        expected_warning = (
+            "Using account with default Ethereum HD Path - "
+            "switching safety level check to 'PromptTemporarily'. "
+            "Please ensure you are only using addresses on the Ethereum ecosystem."
+        )
+        assert caplog.records[-1].message == expected_warning

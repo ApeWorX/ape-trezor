@@ -17,6 +17,11 @@ TEST_ADDRESS = HexAddress(HexStr("0x0A78AAAAA2122100000b9046f0A085AB2E111113"))
 
 
 @pytest.fixture
+def accounts():
+    return ape.accounts
+
+
+@pytest.fixture
 def config():
     return ape.config
 

@@ -1,12 +1,15 @@
 from typing import Any, Dict, Tuple
 
+from ape.logging import logger
 from ape.utils import ManagerAccessMixin
 from eth_typing.evm import ChecksumAddress
 from hexbytes import HexBytes
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
+from trezorlib.device import apply_settings  # type: ignore
 from trezorlib.ethereum import get_address, sign_message, sign_tx, sign_tx_eip1559  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
+from trezorlib.messages import SafetyCheckLevel  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
 from ape_trezor.exceptions import (
@@ -17,6 +20,11 @@ from ape_trezor.exceptions import (
     TrezorClientError,
 )
 from ape_trezor.hdpath import HDBasePath, HDPath
+from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
+
+
+def create_client(hd_path: HDBasePath) -> "TrezorClient":
+    return TrezorClient(hd_path)
 
 
 class TrezorClient:
@@ -142,34 +150,61 @@ class TrezorAccountClient(ManagerAccessMixin):
         if not chain_id:
             chain_id = self.provider.chain_id
 
-        if tx_type == "0x00":  # Static transaction type
-            tuple_reply = sign_tx(
-                self.client,
-                self._account_hd_path.address_n,
-                nonce=txn["nonce"],
-                gas_price=txn["gasPrice"],
-                gas_limit=txn["gas"],
-                to=to_address,
-                value=txn["value"],
-                data=data,
-                chain_id=chain_id,
+        key_path = self._account_hd_path.path
+        prefix = DEFAULT_ETHEREUM_HD_PATH[:-2]
+        is_default_ethereum_path = key_path.startswith(prefix)
+
+        did_change_safety_checks = False
+        if is_default_ethereum_path and (
+            not self.network_manager.active_provider
+            or self.provider.network.ecosystem.name == "ethereum"
+        ):
+            logger.warning(
+                "Using account with default Ethereum HD Path - "
+                "switching safety level check to 'PromptTemporarily'. "
+                "Please ensure you are only using addresses on the Ethereum ecosystem."
             )
-        elif tx_type == "0x02":  # Dynamic transaction type
-            tuple_reply = sign_tx_eip1559(
-                self.client,
-                self._account_hd_path.address_n,
-                nonce=txn["nonce"],
-                gas_limit=txn["gas"],
-                to=to_address,
-                value=txn["value"],
-                data=data,
-                chain_id=chain_id,
-                max_gas_fee=txn["maxFeePerGas"],
-                max_priority_fee=txn["maxPriorityFeePerGas"],
-                access_list=txn.get("accessList"),
-            )
-        else:
-            raise TrezorAccountError(f"Message type {tx_type} is not supported.")
+            apply_settings(self.client, safety_checks=SafetyCheckLevel.PromptTemporarily)
+            did_change_safety_checks = True
+
+        shared_args = (self.client, self._account_hd_path.address_n)
+        shared_kwargs = {
+            "nonce": txn["nonce"],
+            "gas_limit": txn["gas"],
+            "to": to_address,
+            "value": txn["value"],
+            "data": data,
+            "chain_id": chain_id,
+        }
+
+        try:
+            if tx_type == "0x00":  # Static transaction type
+                tuple_reply = sign_tx(
+                    *shared_args,
+                    **shared_kwargs,
+                    gas_price=txn["gasPrice"],
+                )
+            elif tx_type == "0x02":  # Dynamic transaction type
+                tuple_reply = sign_tx_eip1559(
+                    *shared_args,
+                    **shared_kwargs,
+                    max_gas_fee=txn["maxFeePerGas"],
+                    max_priority_fee=txn["maxPriorityFeePerGas"],
+                    access_list=txn.get("accessList"),
+                )
+            else:
+                raise TrezorAccountError(f"Message type {tx_type} is not supported.")
+
+        except TrezorFailure as err:
+            forbidden_key_path = "forbidden key path" in str(err).lower()
+            if forbidden_key_path:
+                raise TrezorAccountError(f"HD account path '{key_path}' is not permitted.") from err
+
+            raise TrezorAccountError(str(err)) from err
+
+        finally:
+            if did_change_safety_checks:
+                apply_settings(self.client, safety_checks=SafetyCheckLevel.Strict)
 
         return (
             tuple_reply[0],

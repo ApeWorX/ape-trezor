@@ -28,19 +28,35 @@ python3 setup.py install
 
 ## Quick Usage
 
-You must have the Trezor USB device connected.
+Trezor accounts have the following capabilities in `ape`:
 
-Then, add accounts:
+1. Can sign transactions (both static-fee and EIP-1559 compliant)
+2. Can sign messages using the default EIP-191 specification
+
+To use the Trezor plugin, you must have the Trezor USB device connected and unlocked.
+
+**WARNING**: When the Trezor Suite is open, you may face additional connection issues.
+ It is recommended to not have the Trezor Suite application open while using the plugin.
+
+## Add Accounts
+
+Add accounts using the `add` command:
 
 ```bash
 ape trezor add <alias>
 ```
 
-Trezor accounts have the following capabilities in `ape`:
+You can also specify the HD Path:
 
-1. Can sign transactions
-2. Can sign messages using the default EIP-191 specification
+```bash
+ape trezor add <alias> --hd-path "m/44'/1'/0'/0"
+```
 
+**WARNING**: When using 3rd party wallets, such as this plugin, `trezorlib` discourages signing transactions from the default Ethereum HD Path `m/44'/60'/0'/0`.
+ Changing the HD-Path in that circumstance will allow fewer warnings from both Ape and the device, as well as improved security.
+ See https://github.com/trezor/trezor-firmware/issues/1336#issuecomment-720126545 for more information.
+
+## List Accounts
 
 To list just your Trezor accounts in `ape`, do:
 
