@@ -1,5 +1,6 @@
 import pytest
 from ape_ethereum.transactions import DynamicFeeTransaction, StaticFeeTransaction
+from eth_account.messages import encode_defunct
 
 
 @pytest.fixture
@@ -41,6 +42,20 @@ def dynamic_fee_transaction(base_transaction_values, constants):
         maxPriorityFeePerGas=constants.MAX_PRIORITY_FEE_PER_GAS,
         accessList=[],
     )
+
+
+def test_sign_personal_message(trezor_account, mock_client, constants):
+    message = encode_defunct(text="Hello Apes")
+    mock_client.sign_personal_message.return_value = (
+        constants.SIG_V,
+        constants.SIG_R,
+        constants.SIG_S,
+    )
+    actual = trezor_account.sign_message(message)
+    assert actual.v == constants.SIG_V
+    assert actual.r == constants.SIG_R
+    assert actual.s == constants.SIG_S
+    mock_client.sign_personal_message.assert_called_once_with(b"Hello Apes")
 
 
 def test_sign_static_fee_transaction(

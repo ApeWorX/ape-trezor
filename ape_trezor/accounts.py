@@ -123,7 +123,6 @@ class TrezorAccount(AccountAPI):
         if "from" in txn_data:
             del txn_data["from"]
 
-        #
         txn_data["gas_limit"] = txn_data.pop("gas", 0)
 
         if tx_type == "0x00":

@@ -100,6 +100,21 @@ class TestTrezorAccountClient:
     def account_client(self, address, account_hd_path, mock_device_client):
         return TrezorAccountClient(address, account_hd_path, client=mock_device_client)
 
+    def test_sign_personal_message(
+        self, mocker, account_client, account_hd_path, signature, constants
+    ):
+        patch = mocker.patch("ape_trezor.client.sign_message")
+        mock_response = mocker.MagicMock()
+        mock_response.signature = signature
+        patch.return_value = mock_response
+        v, r, s = account_client.sign_personal_message(b"Hello Apes")
+        assert v == constants.SIG_V
+        assert r == constants.SIG_R
+        assert s == constants.SIG_S
+        patch.assert_called_once_with(
+            account_client.client, account_hd_path.address_n, b"Hello Apes"
+        )
+
     def test_sign_static_fee_transaction(
         self,
         mocker,
