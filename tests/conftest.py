@@ -10,9 +10,9 @@ from eth_typing import HexAddress, HexStr
 from hexbytes import HexBytes
 
 from ape_trezor import _cli
+# NOTE: Ensure that we don't use local paths for these
 from ape_trezor.hdpath import HDBasePath, HDPath
 
-# NOTE: Ensure that we don't use local paths for these
 ape.config.DATA_FOLDER = Path(mkdtemp()).resolve()
 
 TEST_ADDRESS = HexAddress(HexStr("0x0A78AAAAA2122100000b9046f0A085AB2E111113"))
