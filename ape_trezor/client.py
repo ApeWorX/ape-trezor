@@ -114,7 +114,8 @@ class TrezorAccountClient:
         ethereum_message_signature = sign_message(
             self.client, self._account_hd_path.address_n, message
         )
-        return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
+        signature = ethereum_message_signature.signature  # type: ignore
+        return extract_signature_vrs_bytes(signature_bytes=signature)
 
     def sign_typed_data(self, domain_hash: bytes, message_hash: bytes) -> Tuple[int, bytes, bytes]:
         """
@@ -123,7 +124,8 @@ class TrezorAccountClient:
         ethereum_typed_data_signature = sign_typed_data_hash(
             self.client, self._account_hd_path.address_n, domain_hash, message_hash
         )
-        return extract_signature_vrs_bytes(signature_bytes=ethereum_typed_data_signature.signature)
+        signature = ethereum_typed_data_signature.signature  # type: ignore
+        return extract_signature_vrs_bytes(signature_bytes=signature)
 
     def sign_static_fee_transaction(self, **kwargs) -> Tuple[int, bytes, bytes]:
         return self._sign_transaction(sign_tx, **kwargs)
