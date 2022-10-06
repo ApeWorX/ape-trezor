@@ -1,15 +1,18 @@
 from typing import Any, Dict, Tuple
 
+from ape.utils import ManagerAccessMixin
 from eth_typing.evm import ChecksumAddress
-from trezorlib import ethereum  # type: ignore
+from hexbytes import HexBytes
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
+from trezorlib.ethereum import get_address, sign_message, sign_tx, sign_tx_eip1559  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
-from trezorlib.tools import parse_path as parse_hdpath  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
 from ape_trezor.exceptions import (
-    TrezorAccountException,
+    InvalidHDPathError,
+    InvalidPinError,
+    TrezorAccountError,
     TrezorClientConnectionError,
     TrezorClientError,
 )
@@ -36,13 +39,20 @@ class TrezorClient:
         self._hd_root_path = hd_root_path
 
     def get_account_path(self, account_id: int) -> str:
-        account_path = str(self._hd_root_path.get_account_path(account_id))
+        account_path = self._hd_root_path.get_account_path(account_id)
         try:
-            message_type = ethereum.get_address(self.client, parse_hdpath(account_path))
+            message_type = get_address(self.client, account_path.address_n)
             return str(message_type)
-        except (PinException, TrezorFailure) as exc:
-            message = "You have entered an invalid PIN."
-            raise TrezorAccountException(message) from exc
+
+        except PinException as err:
+            raise InvalidPinError() from err
+
+        except TrezorFailure as err:
+            if "forbidden key path" in str(err).lower():
+                raise InvalidHDPathError(str(account_path))
+
+            code = 0 if not err.code else err.code.value
+            raise TrezorClientError(str(err), status=code) from err
 
 
 def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, bytes]:
@@ -56,21 +66,22 @@ def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, byt
     return signature_bytes[-1], signature_bytes[:32], signature_bytes[32:64]
 
 
-class TrezorAccountClient:
+class TrezorAccountClient(ManagerAccessMixin):
     """
     This class represents an account on the Trezor device when you know the full
     account HD path.
     """
 
     def __init__(
-        self,
-        address: ChecksumAddress,
-        account_hd_path: HDPath,
+        self, address: ChecksumAddress, account_hd_path: HDPath, client: LibTrezorClient = None
     ):
-        try:
-            self.client = get_default_client()
-        except TransportException:
-            raise TrezorClientConnectionError()
+        if not client:
+            try:
+                self.client = get_default_client()
+            except TransportException:
+                raise TrezorClientConnectionError()
+        else:
+            self.client = client
 
         self._address = address
         self._account_hd_path = account_hd_path
@@ -88,8 +99,8 @@ class TrezorAccountClient:
         using your Trezor device. You will need to follow the prompts on the device
         to validate the message data.
         """
-        ethereum_message_signature = ethereum.sign_message(
-            self.client, parse_hdpath(self._account_hd_path.path), message
+        ethereum_message_signature = sign_message(
+            self.client, self._account_hd_path.address_n, message
         )
 
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
@@ -108,37 +119,57 @@ class TrezorAccountClient:
     #       signature_bytes=ethereum_typed_data_signature.signature)
 
     def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
-        tx_type = txn["type"]
+        if "type" not in txn and "gasPrice" in txn:
+            tx_type = "0x00"
+
+        else:
+            tx_type = txn.get("type", "0x00")
+            if isinstance(tx_type, int):
+                tx_type = HexBytes(tx_type).hex()
+            elif isinstance(tx_type, bytes):
+                tx_type = HexBytes(tx_type).hex()
+
+        # NOTE: `trezorlib` expects empty bytes when no data.
+        data = txn.get("data") or b""
+        if isinstance(data, str):
+            data = HexBytes(data)
+
+        # NOTE: When creating contracts, use `""` as `to=` field.
+        to_address = txn.get("to") or ""
+
+        # NOTE: Chain ID is required
+        chain_id = txn.get("chainId")
+        if not chain_id:
+            chain_id = self.provider.chain_id
 
         if tx_type == "0x00":  # Static transaction type
-            tuple_reply = ethereum.sign_tx(
+            tuple_reply = sign_tx(
                 self.client,
-                parse_hdpath(self._account_hd_path.path),
+                self._account_hd_path.address_n,
                 nonce=txn["nonce"],
-                gas_price=txn["maxFeePerGas"],
+                gas_price=txn["gasPrice"],
                 gas_limit=txn["gas"],
-                to=txn.get("receiver"),
+                to=to_address,
                 value=txn["value"],
-                data=txn.get("data"),
-                chain_id=txn.get("chainId"),
-                tx_type=tx_type,
+                data=data,
+                chain_id=chain_id,
             )
         elif tx_type == "0x02":  # Dynamic transaction type
-            tuple_reply = ethereum.sign_tx_eip1559(
+            tuple_reply = sign_tx_eip1559(
                 self.client,
-                parse_hdpath(self._account_hd_path.path),
+                self._account_hd_path.address_n,
                 nonce=txn["nonce"],
                 gas_limit=txn["gas"],
-                to=txn.get("receiver"),
+                to=to_address,
                 value=txn["value"],
-                data=txn.get("data"),
-                chain_id=txn["chainId"],
+                data=data,
+                chain_id=chain_id,
                 max_gas_fee=txn["maxFeePerGas"],
                 max_priority_fee=txn["maxPriorityFeePerGas"],
                 access_list=txn.get("accessList"),
             )
         else:
-            raise TrezorAccountException(f"Message type {tx_type} is not supported.")
+            raise TrezorAccountError(f"Message type {tx_type} is not supported.")
 
         return (
             tuple_reply[0],

@@ -91,6 +91,9 @@ class TrezorAccount(AccountAPI):
         return MessageSignature(*signed_msg)  # type: ignore
 
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionSignature]:
-        signed_txn = self.client.sign_transaction(txn.dict())
+        txn_data = txn.dict()
+        if "data" in txn_data and not txn_data["data"]:
+            del txn_data["data"]
 
-        return TransactionSignature(*signed_txn)  # type: ignore
+        v, r, s = self.client.sign_transaction(txn_data)
+        return TransactionSignature(v=v, r=r, s=s)  # type: ignore

@@ -1,3 +1,7 @@
+from ape.utils import cached_property
+from trezorlib.tools import Address, parse_path  # type: ignore
+
+
 class HDPath:
     """
     A class representing an HD path. This class is the base class
@@ -14,6 +18,10 @@ class HDPath:
 
     def __str__(self):
         return self.path
+
+    @cached_property
+    def address_n(self) -> Address:
+        return parse_path(self.path)
 
 
 class HDBasePath(HDPath):
