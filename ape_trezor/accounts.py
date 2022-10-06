@@ -5,9 +5,10 @@ from typing import Iterator, Optional
 from ape.api.accounts import AccountAPI, AccountContainerAPI, TransactionAPI
 from ape.types import AddressType, MessageSignature, TransactionSignature
 from eth_account.messages import SignableMessage
+from hexbytes import HexBytes
 
 from ape_trezor.client import TrezorAccountClient
-from ape_trezor.exceptions import TrezorSigningError
+from ape_trezor.exceptions import TrezorAccountError, TrezorSigningError
 from ape_trezor.hdpath import HDPath
 
 
@@ -71,6 +72,7 @@ class TrezorAccount(AccountAPI):
     def client(self) -> TrezorAccountClient:
         if self.account_client is None:
             self.account_client = TrezorAccountClient(self.address, self.hdpath)
+
         return self.account_client
 
     def sign_message(self, msg: SignableMessage) -> Optional[MessageSignature]:
@@ -79,7 +81,6 @@ class TrezorAccount(AccountAPI):
         if version == b"E":
             signed_msg = self.client.sign_personal_message(msg.body)
 
-        # TODO: Uncomment when Trezor has released the EIP 712 update
         # elif version == b"\x01":
         #     signed_msg = self.client.sign_typed_data(msg.header, msg.body)
 
@@ -92,8 +93,48 @@ class TrezorAccount(AccountAPI):
 
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionSignature]:
         txn_data = txn.dict()
-        if "data" in txn_data and not txn_data["data"]:
-            del txn_data["data"]
 
-        v, r, s = self.client.sign_transaction(txn_data)
+        if "type" not in txn_data and "gasPrice" in txn_data:
+            tx_type = "0x00"
+
+        else:
+            tx_type = txn_data.pop("type", "0x00")
+            if isinstance(tx_type, int):
+                tx_type = HexBytes(tx_type).hex()
+            elif isinstance(tx_type, bytes):
+                tx_type = HexBytes(tx_type).hex()
+
+        # NOTE: `trezorlib` expects empty bytes when no data.
+        data = txn_data.get("data") or b""
+        if isinstance(data, str):
+            txn_data["data"] = HexBytes(data)
+
+        # NOTE: When creating contracts, use `""` as `to=` field.
+        txn_data["to"] = txn_data.get("to") or ""
+
+        # NOTE: Chain ID is required
+        chain_id = txn_data.pop("chainId")
+        if not chain_id:
+            chain_id = self.provider.chain_id
+
+        txn_data["chain_id"] = chain_id
+
+        # 'from' field not needed
+        if "from" in txn_data:
+            del txn_data["from"]
+
+        #
+        txn_data["gas_limit"] = txn_data.pop("gas", 0)
+
+        if tx_type == "0x00":
+            txn_data["gas_price"] = txn_data.pop("gasPrice", 0)
+            v, r, s = self.client.sign_static_fee_transaction(**txn_data)
+        elif tx_type == "0x02":
+            txn_data["max_gas_fee"] = txn_data.pop("maxFeePerGas", 0)
+            txn_data["max_priority_fee"] = txn_data.pop("maxPriorityFeePerGas", 0)
+            txn_data["access_list"] = txn_data.pop("accessList", [])
+            v, r, s = self.client.sign_dynamic_fee_transaction(**txn_data)
+        else:
+            raise TrezorAccountError(f"Message type {tx_type} is not supported.")
+
         return TransactionSignature(v=v, r=r, s=s)  # type: ignore

@@ -5,7 +5,6 @@ from hexbytes import HexBytes
 from trezorlib.messages import SafetyCheckLevel  # type: ignore
 
 from ape_trezor.client import TrezorAccountClient, TrezorClient, extract_signature_vrs_bytes
-from ape_trezor.hdpath import HDBasePath, HDPath
 
 
 @pytest.fixture
@@ -18,16 +17,6 @@ def patch_create_default_client(mocker, mock_device_client):
     patch = mocker.patch("ape_trezor.client.get_default_client")
     patch.return_value = mock_device_client
     return patch
-
-
-@pytest.fixture
-def hd_path():
-    return HDBasePath("m/44'/60'/0'/0")
-
-
-@pytest.fixture
-def account_hd_path():
-    return HDPath("m/44'/60'/0'/1")
 
 
 @pytest.fixture
@@ -53,45 +42,33 @@ def apply_settings_patch(mocker):
     return mocker.patch("ape_trezor.client.apply_settings")
 
 
-CHAIN_ID = 4
-TO_ADDRESS = "0xE3747e6341E0d3430e6Ea9e2346cdDCc2F8a4b5b"
-GAS_LIMIT = 21000
-NONCE = 6
-VALUE = 100000000000
-MAX_FEE_PER_GAS = 1500000008
-MAX_PRIORITY_FEE_PER_GAS = 1500000000
-GAS_PRICE = 1
-SIG_V = 27
-SIG_R = HexBytes("0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409")
-SIG_S = HexBytes("0x6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc")
-
-
 @pytest.fixture
-def static_fee_transaction(address):
+def base_transaction_values(address, constants):
     return {
-        "chainId": CHAIN_ID,
-        "to": TO_ADDRESS,
-        "from": address,
-        "gas": GAS_LIMIT,
-        "nonce": NONCE,
-        "value": VALUE,
-        "gasPrice": GAS_PRICE,
+        "chain_id": constants.CHAIN_ID,
+        "data": b"",
+        "to": constants.TO_ADDRESS,
+        "gas_limit": constants.GAS_LIMIT,
+        "nonce": constants.NONCE,
+        "value": constants.VALUE,
     }
 
 
 @pytest.fixture
-def dynamic_fee_transaction(address):
+def static_fee_transaction(base_transaction_values, constants):
     return {
-        "chainId": CHAIN_ID,
-        "to": TO_ADDRESS,
-        "from": address,
-        "gas": GAS_LIMIT,
-        "nonce": NONCE,
-        "value": VALUE,
-        "type": "0x02",
-        "maxFeePerGas": MAX_FEE_PER_GAS,
-        "maxPriorityFeePerGas": MAX_PRIORITY_FEE_PER_GAS,
-        "accessList": [],
+        **base_transaction_values,
+        "gas_price": constants.GAS_PRICE,
+    }
+
+
+@pytest.fixture
+def dynamic_fee_transaction(base_transaction_values, constants):
+    return {
+        **base_transaction_values,
+        "max_gas_fee": constants.MAX_FEE_PER_GAS,
+        "max_priority_fee": constants.MAX_PRIORITY_FEE_PER_GAS,
+        "access_list": [],
     }
 
 
@@ -111,11 +88,11 @@ class TestTrezorClient:
         assert actual == address
 
 
-def test_extract_signature_vrs_bytes(signature):
+def test_extract_signature_vrs_bytes(signature, constants):
     v, r, s = extract_signature_vrs_bytes(signature)
-    assert v == SIG_V
-    assert r == SIG_R
-    assert s == SIG_S
+    assert v == constants.SIG_V
+    assert r == constants.SIG_R
+    assert s == constants.SIG_S
 
 
 class TestTrezorAccountClient:
@@ -130,21 +107,22 @@ class TestTrezorAccountClient:
         static_fee_transaction,
         mock_device_client,
         account_hd_path,
+        constants,
     ):
         sign_eip1559_patch = mocker.patch("ape_trezor.client.sign_tx")
-        sign_eip1559_patch.return_value = (SIG_V, SIG_R, SIG_S)
-        actual = account_client.sign_transaction(static_fee_transaction)
-        assert actual == (SIG_V, SIG_R, SIG_S)
+        sign_eip1559_patch.return_value = (constants.SIG_V, constants.SIG_R, constants.SIG_S)
+        actual = account_client.sign_static_fee_transaction(**static_fee_transaction)
+        assert actual == (constants.SIG_V, constants.SIG_R, constants.SIG_S)
         sign_eip1559_patch.assert_called_once_with(
             mock_device_client,
             account_hd_path.address_n,
-            nonce=NONCE,
-            gas_price=GAS_PRICE,
-            gas_limit=GAS_LIMIT,
-            to=TO_ADDRESS,
-            value=VALUE,
+            nonce=constants.NONCE,
+            gas_price=constants.GAS_PRICE,
+            gas_limit=constants.GAS_LIMIT,
+            to=constants.TO_ADDRESS,
+            value=constants.VALUE,
             data=b"",
-            chain_id=CHAIN_ID,
+            chain_id=constants.CHAIN_ID,
         )
 
     def test_sign_dynamic_fee_transaction(
@@ -154,22 +132,23 @@ class TestTrezorAccountClient:
         dynamic_fee_transaction,
         mock_device_client,
         account_hd_path,
+        constants,
     ):
         sign_eip1559_patch = mocker.patch("ape_trezor.client.sign_tx_eip1559")
-        sign_eip1559_patch.return_value = (SIG_V, SIG_R, SIG_S)
-        actual = account_client.sign_transaction(dynamic_fee_transaction)
-        assert actual == (SIG_V, SIG_R, SIG_S)
+        sign_eip1559_patch.return_value = (constants.SIG_V, constants.SIG_R, constants.SIG_S)
+        actual = account_client.sign_dynamic_fee_transaction(**dynamic_fee_transaction)
+        assert actual == (constants.SIG_V, constants.SIG_R, constants.SIG_S)
         sign_eip1559_patch.assert_called_once_with(
             mock_device_client,
             account_hd_path.address_n,
-            nonce=NONCE,
-            gas_limit=GAS_LIMIT,
-            to=TO_ADDRESS,
-            value=VALUE,
+            nonce=constants.NONCE,
+            gas_limit=constants.GAS_LIMIT,
+            to=constants.TO_ADDRESS,
+            value=constants.VALUE,
             data=b"",
-            chain_id=CHAIN_ID,
-            max_gas_fee=MAX_FEE_PER_GAS,
-            max_priority_fee=MAX_PRIORITY_FEE_PER_GAS,
+            chain_id=constants.CHAIN_ID,
+            max_gas_fee=constants.MAX_FEE_PER_GAS,
+            max_priority_fee=constants.MAX_PRIORITY_FEE_PER_GAS,
             access_list=[],
         )
 
@@ -186,7 +165,7 @@ class TestTrezorAccountClient:
         apply_settings_patch = mocker.patch("ape_trezor.client.apply_settings")
 
         with caplog.at_level(LogLevel.WARNING):
-            account_client.sign_transaction(dynamic_fee_transaction)
+            account_client.sign_dynamic_fee_transaction(**dynamic_fee_transaction)
 
         assert sign_eip1559_patch.call_count == 1
         assert apply_settings_patch.call_count == 2
