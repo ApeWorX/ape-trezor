@@ -4,10 +4,10 @@ from ape.logging import logger
 from eth_typing.evm import ChecksumAddress
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
-from trezorlib.device import apply_settings
+from trezorlib.device import apply_settings  # type: ignore
 from trezorlib.ethereum import get_address, sign_message, sign_tx, sign_tx_eip1559  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
-from trezorlib.messages import SafetyCheckLevel
+from trezorlib.messages import SafetyCheckLevel  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
 from ape_trezor.exceptions import (
