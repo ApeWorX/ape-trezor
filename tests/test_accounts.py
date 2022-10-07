@@ -1,6 +1,28 @@
 import pytest
 from ape_ethereum.transactions import DynamicFeeTransaction, StaticFeeTransaction
+from eip712.messages import EIP712Message, EIP712Type
 from eth_account.messages import encode_defunct
+
+
+class Person(EIP712Type):
+    name: "string"  # type: ignore # noqa: F821
+    wallet: "address"  # type: ignore # noqa: F821
+
+
+class Mail(EIP712Message):
+    _chainId_: "uint256" = 1  # type: ignore # noqa: F821
+    _name_: "string" = "Ether Mail"  # type: ignore # noqa: F821
+    _verifyingContract_: "address" = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"  # type: ignore # noqa: F821 E501
+    _version_: "string" = "1"  # type: ignore # noqa: F821
+    _salt_: "string" = "123"  # type: ignore # noqa: F821
+
+    sender: Person
+    receiver: Person
+
+
+SENDER = Person("Cow", "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826")  # type: ignore
+RECEIVER = Person("Bob", "0xB0B0b0b0b0b0B000000000000000000000000000")  # type: ignore
+TYPED_MESSAGE = Mail(sender=SENDER, receiver=RECEIVER)  # type: ignore
 
 
 @pytest.fixture
@@ -56,6 +78,19 @@ def test_sign_personal_message(trezor_account, mock_client, constants):
     assert actual.r == constants.SIG_R
     assert actual.s == constants.SIG_S
     mock_client.sign_personal_message.assert_called_once_with(b"Hello Apes")
+
+
+def test_typed_message(trezor_account, mock_client, constants, address):
+    mock_client.sign_typed_message.return_value = (
+        constants.SIG_V,
+        constants.SIG_R,
+        constants.SIG_S,
+    )
+    actual = trezor_account.sign_message(TYPED_MESSAGE.signable_message)
+    assert actual.v == constants.SIG_V
+    assert actual.r == constants.SIG_R
+    assert actual.s == constants.SIG_S
+    mock_client.sign_typed_message.assert_called_once_with(TYPED_MESSAGE.header, TYPED_MESSAGE.body)
 
 
 def test_sign_static_fee_transaction(

@@ -10,9 +10,9 @@ from eth_typing import HexAddress, HexStr
 from hexbytes import HexBytes
 
 from ape_trezor import _cli
-# NOTE: Ensure that we don't use local paths for these
 from ape_trezor.hdpath import HDBasePath, HDPath
 
+# NOTE: Ensure that we don't use local paths for these
 ape.config.DATA_FOLDER = Path(mkdtemp()).resolve()
 
 TEST_ADDRESS = HexAddress(HexStr("0x0A78AAAAA2122100000b9046f0A085AB2E111113"))
@@ -93,3 +93,11 @@ def hd_path():
 @pytest.fixture
 def account_hd_path():
     return HDPath("m/44'/60'/0'/1")
+
+
+@pytest.fixture
+def signature():
+    return HexBytes(
+        "0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409"
+        "6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc1b"
+    )

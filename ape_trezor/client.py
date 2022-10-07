@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable, Tuple, cast
 
 from ape.logging import logger
 from eth_typing.evm import ChecksumAddress
@@ -13,7 +13,11 @@ from trezorlib.ethereum import (  # type: ignore
     sign_typed_data_hash,
 )
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
-from trezorlib.messages import SafetyCheckLevel
+from trezorlib.messages import (
+    EthereumMessageSignature,
+    EthereumTypedDataSignature,
+    SafetyCheckLevel,
+)
 from trezorlib.transport import TransportException  # type: ignore
 
 from ape_trezor.exceptions import (
@@ -111,21 +115,21 @@ class TrezorAccountClient:
         using your Trezor device. You will need to follow the prompts on the device
         to validate the message data.
         """
-        ethereum_message_signature = sign_message(
-            self.client, self._account_hd_path.address_n, message
-        )
-        signature = ethereum_message_signature.signature  # type: ignore
-        return extract_signature_vrs_bytes(signature_bytes=signature)
+        response_message = sign_message(self.client, self._account_hd_path.address_n, message)
+        response_message = cast(EthereumMessageSignature, response_message)
+        return extract_signature_vrs_bytes(signature_bytes=response_message.signature)
 
-    def sign_typed_data(self, domain_hash: bytes, message_hash: bytes) -> Tuple[int, bytes, bytes]:
+    def sign_typed_message(
+        self, domain_hash: bytes, message_hash: bytes
+    ) -> Tuple[int, bytes, bytes]:
         """
         Sign an Ethereum message following the EIP 712 specification.
         """
-        ethereum_typed_data_signature = sign_typed_data_hash(
+        response_message = sign_typed_data_hash(
             self.client, self._account_hd_path.address_n, domain_hash, message_hash
         )
-        signature = ethereum_typed_data_signature.signature  # type: ignore
-        return extract_signature_vrs_bytes(signature_bytes=signature)
+        response_message = cast(EthereumTypedDataSignature, response_message)
+        return extract_signature_vrs_bytes(signature_bytes=response_message.signature)
 
     def sign_static_fee_transaction(self, **kwargs) -> Tuple[int, bytes, bytes]:
         return self._sign_transaction(sign_tx, **kwargs)

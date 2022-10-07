@@ -1,7 +1,6 @@
 import ape
 import pytest
 from ape.logging import LogLevel
-from hexbytes import HexBytes
 from trezorlib.messages import SafetyCheckLevel  # type: ignore
 
 from ape_trezor.client import TrezorAccountClient, TrezorClient, extract_signature_vrs_bytes
@@ -27,14 +26,6 @@ def mock_get_address(mocker):
 @pytest.fixture
 def address():
     return ape.accounts.test_accounts[0].address
-
-
-@pytest.fixture
-def signature():
-    return HexBytes(
-        "0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409"
-        "6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc1b"
-    )
 
 
 @pytest.fixture(autouse=True)
@@ -113,6 +104,21 @@ class TestTrezorAccountClient:
         assert s == constants.SIG_S
         patch.assert_called_once_with(
             account_client.client, account_hd_path.address_n, b"Hello Apes"
+        )
+
+    def test_sign_typed_message(
+        self, mocker, account_client, account_hd_path, signature, constants
+    ):
+        patch = mocker.patch("ape_trezor.client.sign_typed_data_hash")
+        mock_response = mocker.MagicMock()
+        mock_response.signature = signature
+        patch.return_value = mock_response
+        v, r, s = account_client.sign_typed_message(b"Test header", b"Hello Apes")
+        assert v == constants.SIG_V
+        assert r == constants.SIG_R
+        assert s == constants.SIG_S
+        patch.assert_called_once_with(
+            account_client.client, account_hd_path.address_n, b"Test header", b"Hello Apes"
         )
 
     def test_sign_static_fee_transaction(
