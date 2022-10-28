@@ -45,7 +45,7 @@ def test_add(mock_client, runner, cli, accounts, clean, mock_client_factory, cap
     # Ensure warning appears because using default Ethereum HD Path
     log_warning = caplog.records[-1].message
     expected = (
-        "Using the default Ethereum HD Path is not recommended for 3rd part wallets. "
+        "Using the default Ethereum HD Path is not recommended for 3rd party wallets. "
         "Please use an alternative HD-Path for a safer integration."
     )
     assert log_warning == expected
