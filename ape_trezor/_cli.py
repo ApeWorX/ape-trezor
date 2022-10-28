@@ -59,7 +59,7 @@ def add(cli_ctx, alias, hd_path):
 
     if hd_path.path == DEFAULT_ETHEREUM_HD_PATH:
         cli_ctx.logger.warning(
-            "Using the default Ethereum HD Path is not recommended for 3rd part wallets. "
+            "Using the default Ethereum HD Path is not recommended for 3rd party wallets. "
             "Please use an alternative HD-Path for a safer integration."
         )
 
