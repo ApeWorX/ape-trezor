@@ -1,12 +1,13 @@
-from typing import Any, Dict, Tuple
+from typing import Callable, Tuple
 
-from ape.utils import ManagerAccessMixin
+from ape.logging import logger
 from eth_typing.evm import ChecksumAddress
-from hexbytes import HexBytes
 from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
 from trezorlib.client import get_default_client  # type: ignore
+from trezorlib.device import apply_settings  # type: ignore
 from trezorlib.ethereum import get_address, sign_message, sign_tx, sign_tx_eip1559  # type: ignore
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
+from trezorlib.messages import SafetyCheckLevel  # type: ignore
 from trezorlib.transport import TransportException  # type: ignore
 
 from ape_trezor.exceptions import (
@@ -17,6 +18,11 @@ from ape_trezor.exceptions import (
     TrezorClientError,
 )
 from ape_trezor.hdpath import HDBasePath, HDPath
+from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
+
+
+def create_client(hd_path: HDBasePath) -> "TrezorClient":
+    return TrezorClient(hd_path)
 
 
 class TrezorClient:
@@ -66,7 +72,7 @@ def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, byt
     return signature_bytes[-1], signature_bytes[:32], signature_bytes[32:64]
 
 
-class TrezorAccountClient(ManagerAccessMixin):
+class TrezorAccountClient:
     """
     This class represents an account on the Trezor device when you know the full
     account HD path.
@@ -102,80 +108,58 @@ class TrezorAccountClient(ManagerAccessMixin):
         ethereum_message_signature = sign_message(
             self.client, self._account_hd_path.address_n, message
         )
-
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
 
-    # TODO: Uncomment when Trezor has released the EIP 712 update
-    # def sign_typed_data(self, domain_hash: bytes, message_hash: bytes)
-    # -> Tuple[int, bytes, bytes]:
+    # def sign_typed_data(
+    #     self, domain_hash: bytes, message_hash: bytes
+    # ) -> Tuple[int, bytes, bytes]:
     #     """
     #     Sign an Ethereum message following the EIP 712 specification.
     #     """
-    #     ethereum_typed_data_signature = ethereum.sign_typed_data_hash(
-    #         self.client, parse_hdpath(self._account_hd_path.path), domain_hash, message_hash
+    #     ethereum_typed_data_signature = sign_typed_data_hash(
+    #         self.client, self._account_hd_path.address_n, domain_hash, message_hash
+    #     )
+    #     return extract_signature_vrs_bytes(
+    #         signature_bytes=ethereum_typed_data_signature.signature
     #     )
 
-    #     return extract_signature_vrs_bytes(
-    #       signature_bytes=ethereum_typed_data_signature.signature)
+    def sign_static_fee_transaction(self, **kwargs) -> Tuple[int, bytes, bytes]:
+        return self._sign_transaction(sign_tx, **kwargs)
 
-    def sign_transaction(self, txn: Dict[Any, Any]) -> Tuple[int, bytes, bytes]:
-        if "type" not in txn and "gasPrice" in txn:
-            tx_type = "0x00"
+    def sign_dynamic_fee_transaction(self, **kwargs) -> Tuple[int, bytes, bytes]:
+        return self._sign_transaction(sign_tx_eip1559, **kwargs)
 
-        else:
-            tx_type = txn.get("type", "0x00")
-            if isinstance(tx_type, int):
-                tx_type = HexBytes(tx_type).hex()
-            elif isinstance(tx_type, bytes):
-                tx_type = HexBytes(tx_type).hex()
+    def _sign_transaction(self, lib_call: Callable, **kwargs) -> Tuple[int, bytes, bytes]:
+        did_change = self._allow_default_ethereum_account_signing()
+        try:
+            return lib_call(self.client, self._account_hd_path.address_n, **kwargs)
 
-        # NOTE: `trezorlib` expects empty bytes when no data.
-        data = txn.get("data") or b""
-        if isinstance(data, str):
-            data = HexBytes(data)
+        except TrezorFailure as err:
+            forbidden_key_path = "forbidden key path" in str(err).lower()
+            if forbidden_key_path:
+                key_path = self._account_hd_path.path
+                raise TrezorAccountError(f"HD account path '{key_path}' is not permitted.") from err
 
-        # NOTE: When creating contracts, use `""` as `to=` field.
-        to_address = txn.get("to") or ""
+            raise TrezorAccountError(str(err)) from err
 
-        # NOTE: Chain ID is required
-        chain_id = txn.get("chainId")
-        if not chain_id:
-            chain_id = self.provider.chain_id
+        finally:
+            if did_change:
+                apply_settings(self.client, safety_checks=SafetyCheckLevel.Strict)
 
-        if tx_type == "0x00":  # Static transaction type
-            tuple_reply = sign_tx(
-                self.client,
-                self._account_hd_path.address_n,
-                nonce=txn["nonce"],
-                gas_price=txn["gasPrice"],
-                gas_limit=txn["gas"],
-                to=to_address,
-                value=txn["value"],
-                data=data,
-                chain_id=chain_id,
-            )
-        elif tx_type == "0x02":  # Dynamic transaction type
-            tuple_reply = sign_tx_eip1559(
-                self.client,
-                self._account_hd_path.address_n,
-                nonce=txn["nonce"],
-                gas_limit=txn["gas"],
-                to=to_address,
-                value=txn["value"],
-                data=data,
-                chain_id=chain_id,
-                max_gas_fee=txn["maxFeePerGas"],
-                max_priority_fee=txn["maxPriorityFeePerGas"],
-                access_list=txn.get("accessList"),
-            )
-        else:
-            raise TrezorAccountError(f"Message type {tx_type} is not supported.")
+    def _allow_default_ethereum_account_signing(self) -> bool:
+        key_path = self._account_hd_path.path
+        prefix = DEFAULT_ETHEREUM_HD_PATH[:-2]
+        is_default_ethereum_path = key_path.startswith(prefix)
+        if not is_default_ethereum_path:
+            return False
 
-        return (
-            tuple_reply[0],
-            tuple_reply[1],
-            tuple_reply[2],
+        logger.warning(
+            "Using account with default Ethereum HD Path - "
+            "switching safety level check to 'PromptTemporarily'. "
+            "Please ensure you are only using addresses on the Ethereum ecosystem."
         )
+        apply_settings(self.client, safety_checks=SafetyCheckLevel.PromptTemporarily)
+        return True
 
 
 __all__ = [

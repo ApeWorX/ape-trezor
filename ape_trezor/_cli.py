@@ -11,9 +11,10 @@ from eth_account.messages import encode_defunct
 
 from ape_trezor.accounts import TrezorAccount
 from ape_trezor.choices import AddressPromptChoice
-from ape_trezor.client import TrezorClient
+from ape_trezor.client import create_client
 from ape_trezor.exceptions import TrezorSigningError
 from ape_trezor.hdpath import HDBasePath
+from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
 
 
 @click.group(short_help="Manage Trezor accounts")
@@ -56,7 +57,13 @@ def _list(cli_ctx):
 def add(cli_ctx, alias, hd_path):
     """Add a account from your Trezor hardware wallet"""
 
-    client = TrezorClient(hd_path)
+    if hd_path.path == DEFAULT_ETHEREUM_HD_PATH:
+        cli_ctx.logger.warning(
+            "Using the default Ethereum HD Path is not recommended for 3rd party wallets. "
+            "Please use an alternative HD-Path for a safer integration."
+        )
+
+    client = create_client(hd_path)
     choices = AddressPromptChoice(client, hd_path)
     address, account_hd_path = choices.get_user_selected_account()
     container = accounts.containers.get("trezor")
