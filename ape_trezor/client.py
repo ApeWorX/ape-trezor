@@ -13,7 +13,7 @@ from trezorlib.ethereum import (  # type: ignore
     sign_typed_data_hash,
 )
 from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
-from trezorlib.messages import (
+from trezorlib.messages import (  # type: ignore
     EthereumMessageSignature,
     EthereumTypedDataSignature,
     SafetyCheckLevel,
