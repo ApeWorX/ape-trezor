@@ -6,7 +6,7 @@ Ape Trezor is a plugin for [Ape Framework](https://github.com/ApeWorx/ape) which
 
 * [python3](https://www.python.org/downloads) version 3.8 or greater, python3-dev
 
-Note: USB does not work in WSL2 environments natively and is [not currently supported](https://github.com/microsoft/WSL/issues/5158). 
+**Note**: USB does not work in WSL2 environments natively and is [not currently supported](https://github.com/microsoft/WSL/issues/5158). 
 
 ## Installation
 
