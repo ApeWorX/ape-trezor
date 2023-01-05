@@ -91,7 +91,7 @@ class TrezorAccount(AccountAPI):
 
         return MessageSignature(*signed_msg)  # type: ignore
 
-    def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionAPI]:
+    def sign_transaction(self, txn: TransactionAPI, **kwargs) -> Optional[TransactionAPI]:
         txn_data = txn.dict()
 
         if "type" not in txn_data and "gasPrice" in txn_data:
