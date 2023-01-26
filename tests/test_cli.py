@@ -51,10 +51,14 @@ def test_add(mock_client, runner, cli, accounts, clean, mock_client_factory, cap
     assert log_warning == expected
 
 
-def test_add_specify_hd_path(mock_client, runner, cli, accounts, clean, mock_client_factory):
+def test_add_specify_hd_path(
+    mock_client, runner, cli, accounts, clean, mock_client_factory
+):
     mock_client.get_account_path.return_value = ZERO_ADDRESS
     hd_path = "m/44'/1'/0'/0"
-    result = runner.invoke(cli, ["add", NEW_ACCOUNT_ALIAS, "--hd-path", hd_path], input="0\n")
+    result = runner.invoke(
+        cli, ["add", NEW_ACCOUNT_ALIAS, "--hd-path", hd_path], input="0\n"
+    )
     assert result.exit_code == 0, result.output
     assert mock_client_factory.call_args[0][-1].path == hd_path
 
@@ -62,13 +66,21 @@ def test_add_specify_hd_path(mock_client, runner, cli, accounts, clean, mock_cli
 def test_list(runner, cli, existing_key_file):
     result = runner.invoke(cli, ["list"], catch_exceptions=False)
     assert result.exit_code == 0, result.output
-    assert "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B (alias: 'harambe_lives')" in result.output
+    assert (
+        "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B (alias: 'harambe_lives')"
+        in result.output
+    )
 
 
 def test_main_accounts_list(runner, ape_cli, existing_key_file):
-    result = runner.invoke(ape_cli, ["accounts", "list", "--all"], catch_exceptions=False)
+    result = runner.invoke(
+        ape_cli, ["accounts", "list", "--all"], catch_exceptions=False
+    )
     assert result.exit_code == 0, result.output
-    assert "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B (alias: 'harambe_lives')" in result.output
+    assert (
+        "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B (alias: 'harambe_lives')"
+        in result.output
+    )
 
 
 def test_delete(runner, cli, existing_key_file):

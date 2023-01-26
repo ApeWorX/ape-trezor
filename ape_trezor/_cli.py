@@ -68,7 +68,9 @@ def add(cli_ctx, alias, hd_path):
     address, account_hd_path = choices.get_user_selected_account()
     container = accounts.containers.get("trezor")
     container.save_account(alias, address, str(account_hd_path))
-    cli_ctx.logger.success(f"Account '{address}' successfully added with alias '{alias}'.")
+    cli_ctx.logger.success(
+        f"Account '{address}' successfully added with alias '{alias}'."
+    )
 
 
 @cli.command()
@@ -94,7 +96,9 @@ def delete_all(cli_ctx, skip_confirmation):
         cli_ctx.logger.warning("No accounts found.")
         return
 
-    user_agrees = skip_confirmation or click.confirm("Remove all Trezor accounts from ape?")
+    user_agrees = skip_confirmation or click.confirm(
+        "Remove all Trezor accounts from ape?"
+    )
     if not user_agrees:
         cli_ctx.logger.info("No account were removed.")
         return
@@ -121,7 +125,9 @@ def sign_message(cli_ctx, alias, message):
     # Verify signature
     signer = Account.recover_message(eip191_message, signature=signature_bytes)
     if signer != account.address:
-        cli_ctx.abort(f"Signer resolves incorrectly, got {signer}, expected {account.address}.")
+        cli_ctx.abort(
+            f"Signer resolves incorrectly, got {signer}, expected {account.address}."
+        )
 
     # Message signed successfully, return signature
     click.echo("Signature: " + signature.encode_rsv().hex())

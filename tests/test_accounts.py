@@ -90,7 +90,9 @@ def test_typed_message(trezor_account, mock_client, constants, address):
     assert actual.v == constants.SIG_V
     assert actual.r == constants.SIG_R
     assert actual.s == constants.SIG_S
-    mock_client.sign_typed_message.assert_called_once_with(TYPED_MESSAGE.header, TYPED_MESSAGE.body)
+    mock_client.sign_typed_message.assert_called_once_with(
+        TYPED_MESSAGE.header, TYPED_MESSAGE.body
+    )
 
 
 def test_sign_static_fee_transaction(

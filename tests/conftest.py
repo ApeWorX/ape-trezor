@@ -30,7 +30,10 @@ def config():
 
 @pytest.fixture
 def key_file_data():
-    return {"address": "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", "hdpath": "m/44'/60'/0'/0/0"}
+    return {
+        "address": "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B",
+        "hdpath": "m/44'/60'/0'/0/0",
+    }
 
 
 @pytest.fixture
@@ -79,8 +82,12 @@ def constants():
         MAX_PRIORITY_FEE_PER_GAS = 1500000000
         GAS_PRICE = 1
         SIG_V = 27
-        SIG_R = HexBytes("0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409")
-        SIG_S = HexBytes("0x6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc")
+        SIG_R = HexBytes(
+            "0x8a183a2798a3513133a2f0a5dfdb3f8696034f783e0fb994d69a64a801b07409"
+        )
+        SIG_S = HexBytes(
+            "0x6cadc1eb65b05da34d7287c94454efadbcca2952476654f607b9a858847e49bc"
+        )
 
     return Constants
 

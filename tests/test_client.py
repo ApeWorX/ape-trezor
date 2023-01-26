@@ -3,7 +3,11 @@ import pytest
 from ape.logging import LogLevel
 from trezorlib.messages import SafetyCheckLevel  # type: ignore
 
-from ape_trezor.client import TrezorAccountClient, TrezorClient, extract_signature_vrs_bytes
+from ape_trezor.client import (
+    TrezorAccountClient,
+    TrezorClient,
+    extract_signature_vrs_bytes,
+)
 
 
 @pytest.fixture
@@ -68,7 +72,9 @@ class TestTrezorClient:
     def client(self, hd_path, mock_device_client):
         return TrezorClient(hd_path, client=mock_device_client)
 
-    def test_init_creates_client(self, patch_create_default_client, hd_path, mock_device_client):
+    def test_init_creates_client(
+        self, patch_create_default_client, hd_path, mock_device_client
+    ):
         client = TrezorClient(hd_path)
         assert patch_create_default_client.call_count == 1
         assert client.client == mock_device_client
@@ -118,7 +124,10 @@ class TestTrezorAccountClient:
         assert r == constants.SIG_R
         assert s == constants.SIG_S
         patch.assert_called_once_with(
-            account_client.client, account_hd_path.address_n, b"Test header", b"Hello Apes"
+            account_client.client,
+            account_hd_path.address_n,
+            b"Test header",
+            b"Hello Apes",
         )
 
     def test_sign_static_fee_transaction(
@@ -131,7 +140,11 @@ class TestTrezorAccountClient:
         constants,
     ):
         sign_eip1559_patch = mocker.patch("ape_trezor.client.sign_tx")
-        sign_eip1559_patch.return_value = (constants.SIG_V, constants.SIG_R, constants.SIG_S)
+        sign_eip1559_patch.return_value = (
+            constants.SIG_V,
+            constants.SIG_R,
+            constants.SIG_S,
+        )
         actual = account_client.sign_static_fee_transaction(**static_fee_transaction)
         assert actual == (constants.SIG_V, constants.SIG_R, constants.SIG_S)
         sign_eip1559_patch.assert_called_once_with(
@@ -156,7 +169,11 @@ class TestTrezorAccountClient:
         constants,
     ):
         sign_eip1559_patch = mocker.patch("ape_trezor.client.sign_tx_eip1559")
-        sign_eip1559_patch.return_value = (constants.SIG_V, constants.SIG_R, constants.SIG_S)
+        sign_eip1559_patch.return_value = (
+            constants.SIG_V,
+            constants.SIG_R,
+            constants.SIG_S,
+        )
         actual = account_client.sign_dynamic_fee_transaction(**dynamic_fee_transaction)
         assert actual == (constants.SIG_V, constants.SIG_R, constants.SIG_S)
         sign_eip1559_patch.assert_called_once_with(

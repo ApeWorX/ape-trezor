@@ -89,7 +89,10 @@ class TrezorAccountClient:
     """
 
     def __init__(
-        self, address: ChecksumAddress, account_hd_path: HDPath, client: LibTrezorClient = None
+        self,
+        address: ChecksumAddress,
+        account_hd_path: HDPath,
+        client: LibTrezorClient = None,
     ):
         if not client:
             try:
@@ -115,7 +118,9 @@ class TrezorAccountClient:
         using your Trezor device. You will need to follow the prompts on the device
         to validate the message data.
         """
-        response_message = sign_message(self.client, self._account_hd_path.address_n, message)
+        response_message = sign_message(
+            self.client, self._account_hd_path.address_n, message
+        )
         response_message = cast(EthereumMessageSignature, response_message)
         return extract_signature_vrs_bytes(signature_bytes=response_message.signature)
 
@@ -137,7 +142,9 @@ class TrezorAccountClient:
     def sign_dynamic_fee_transaction(self, **kwargs) -> Tuple[int, bytes, bytes]:
         return self._sign_transaction(sign_tx_eip1559, **kwargs)
 
-    def _sign_transaction(self, lib_call: Callable, **kwargs) -> Tuple[int, bytes, bytes]:
+    def _sign_transaction(
+        self, lib_call: Callable, **kwargs
+    ) -> Tuple[int, bytes, bytes]:
         did_change = self._allow_default_ethereum_account_signing()
         try:
             return lib_call(self.client, self._account_hd_path.address_n, **kwargs)
@@ -146,7 +153,9 @@ class TrezorAccountClient:
             forbidden_key_path = "forbidden key path" in str(err).lower()
             if forbidden_key_path:
                 key_path = self._account_hd_path.path
-                raise TrezorAccountError(f"HD account path '{key_path}' is not permitted.") from err
+                raise TrezorAccountError(
+                    f"HD account path '{key_path}' is not permitted."
+                ) from err
 
             raise TrezorAccountError(str(err)) from err
 
