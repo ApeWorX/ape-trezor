@@ -58,6 +58,11 @@ ape trezor add <alias> --hd-path "m/44'/1'/0'/0"
  Changing the HD-Path in that circumstance will allow fewer warnings from both Ape and the device, as well as improved security.
  See https://github.com/trezor/trezor-firmware/issues/1336#issuecomment-720126545 for more information.
 
+```yaml
+trezor:
+  hd_path: "m/44'/1'/0'/0"
+```
+
 ## List Accounts
 
 To list just your Trezor accounts in `ape`, do:

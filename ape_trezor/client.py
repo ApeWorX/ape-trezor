@@ -1,14 +1,14 @@
-from typing import Callable, Tuple
+from typing import Callable, Optional, Tuple
 
 from ape.logging import logger
 from eth_typing.evm import ChecksumAddress
-from trezorlib.client import TrezorClient as LibTrezorClient  # type: ignore
-from trezorlib.client import get_default_client  # type: ignore
-from trezorlib.device import apply_settings  # type: ignore
-from trezorlib.ethereum import get_address, sign_message, sign_tx, sign_tx_eip1559  # type: ignore
-from trezorlib.exceptions import PinException, TrezorFailure  # type: ignore
-from trezorlib.messages import SafetyCheckLevel  # type: ignore
-from trezorlib.transport import TransportException  # type: ignore
+from trezorlib.client import TrezorClient as LibTrezorClient
+from trezorlib.client import get_default_client
+from trezorlib.device import apply_settings
+from trezorlib.ethereum import get_address, sign_message, sign_tx, sign_tx_eip1559
+from trezorlib.exceptions import PinException, TrezorFailure
+from trezorlib.messages import SafetyCheckLevel
+from trezorlib.transport import TransportException
 
 from ape_trezor.exceptions import (
     InvalidHDPathError,
@@ -30,7 +30,7 @@ class TrezorClient:
     This class is a client for the Trezor device.
     """
 
-    def __init__(self, hd_root_path: HDBasePath, client: LibTrezorClient = None):
+    def __init__(self, hd_root_path: HDBasePath, client: Optional[LibTrezorClient] = None):
         if not client:
             try:
                 self.client = get_default_client()
@@ -79,7 +79,10 @@ class TrezorAccountClient:
     """
 
     def __init__(
-        self, address: ChecksumAddress, account_hd_path: HDPath, client: LibTrezorClient = None
+        self,
+        address: ChecksumAddress,
+        account_hd_path: HDPath,
+        client: Optional[LibTrezorClient] = None,
     ):
         if not client:
             try:
@@ -163,6 +166,7 @@ class TrezorAccountClient:
 
 
 __all__ = [
+    "create_client",
     "TrezorClient",
     "TrezorAccountClient",
 ]

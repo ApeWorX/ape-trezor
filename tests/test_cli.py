@@ -59,6 +59,21 @@ def test_add_specify_hd_path(mock_client, runner, cli, accounts, clean, mock_cli
     assert mock_client_factory.call_args[0][-1].path == hd_path
 
 
+def test_add_uses_hd_path_from_config(
+    mock_client, temp_config, runner, cli, clean, mock_client_factory, accounts
+):
+    mock_client.get_account_path.return_value = ZERO_ADDRESS
+    hd_path = "m/1'/60'/0'/0"
+    data = {"trezor": {"hd_path": hd_path}}
+    with temp_config(data):
+        result = runner.invoke(cli, ["add", NEW_ACCOUNT_ALIAS], input="0\n")
+        assert result.exit_code == 0, result.output
+        assert mock_client_factory.call_args[0][0].path == hd_path
+
+    account = accounts.load(NEW_ACCOUNT_ALIAS)
+    assert str(account.hd_path) == "m/1'/60'/0'/0/0"
+
+
 def test_list(runner, cli, existing_key_file):
     result = runner.invoke(cli, ["list"], catch_exceptions=False)
     assert result.exit_code == 0, result.output

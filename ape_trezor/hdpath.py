@@ -1,5 +1,5 @@
 from ape.utils import cached_property
-from trezorlib.tools import Address, parse_path  # type: ignore
+from trezorlib.tools import Address, parse_path
 
 
 class HDPath:
@@ -18,6 +18,9 @@ class HDPath:
 
     def __str__(self):
         return self.path
+
+    def __repr__(self):
+        return f"<{self}>"
 
     @cached_property
     def address_n(self) -> Address:
