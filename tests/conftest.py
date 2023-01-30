@@ -1,10 +1,15 @@
 import json
+import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import mkdtemp
+from typing import Dict, Optional
 
 import ape
 import pytest
+import yaml
 from ape._cli import cli as root_ape_cli
+from ape.managers.config import CONFIG_FILE_NAME
 from click.testing import CliRunner
 from eth_typing import HexAddress, HexStr
 from hexbytes import HexBytes
@@ -18,44 +23,44 @@ ape.config.DATA_FOLDER = Path(mkdtemp()).resolve()
 TEST_ADDRESS = HexAddress(HexStr("0x0A78AAAAA2122100000b9046f0A085AB2E111113"))
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def accounts():
     return ape.accounts
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def config():
     return ape.config
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def key_file_data():
     return {"address": "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B", "hdpath": "m/44'/60'/0'/0/0"}
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def runner():
     runner = CliRunner()
     with runner.isolated_filesystem():
         yield runner
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def cli():
     return _cli.cli
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def ape_cli():
     return root_ape_cli
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def address():
     return TEST_ADDRESS
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def existing_key_file(config, key_file_data):
     trezor_data_folder = config.DATA_FOLDER / "trezor"
     trezor_data_folder.mkdir(exist_ok=True, parents=True)
@@ -67,7 +72,7 @@ def mock_client(mocker):
     return mocker.MagicMock()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def constants():
     class Constants:
         CHAIN_ID = 4
@@ -85,11 +90,37 @@ def constants():
     return Constants
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def hd_path():
     return HDBasePath("m/44'/60'/0'/0")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def account_hd_path():
     return HDPath("m/44'/60'/0'/1")
+
+
+@pytest.fixture(scope="session")
+def temp_config(config):
+    @contextmanager
+    def func(data: Dict, package_json: Optional[Dict] = None):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str)
+
+            config._cached_configs = {}
+            config_file = temp_dir / CONFIG_FILE_NAME
+            config_file.touch()
+            config_file.write_text(yaml.dump(data))
+            config.load(force_reload=True)
+
+            if package_json:
+                package_json_file = temp_dir / "package.json"
+                package_json_file.write_text(json.dumps(package_json))
+
+            with config.using_project(temp_dir):
+                yield temp_dir
+
+            config_file.unlink()
+            config._cached_configs = {}
+
+    return func

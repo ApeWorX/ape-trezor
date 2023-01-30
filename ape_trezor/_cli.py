@@ -1,3 +1,6 @@
+from typing import cast
+
+import ape
 import click
 from ape import accounts
 from ape.cli import (
@@ -9,7 +12,7 @@ from ape.cli import (
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
-from ape_trezor.accounts import TrezorAccount
+from ape_trezor.accounts import TrezorAccount, TrezorConfig
 from ape_trezor.choices import AddressPromptChoice
 from ape_trezor.client import create_client
 from ape_trezor.exceptions import TrezorSigningError
@@ -42,18 +45,29 @@ def _list(cli_ctx):
 
     for account in trezor_accounts:
         alias_display = f" (alias: '{account.alias}')" if account.alias else ""
-        hd_path_display = f" (hd-path: '{account.hdpath}')" if account.hdpath else ""
+        hd_path_display = f" (hd-path: '{account.hd_path}')" if account.hd_path else ""
         click.echo(f"  {account.address}{alias_display}{hd_path_display}")
+
+
+def handle_hd_path(ctx, param, value):
+    if not value:
+        config = cast(TrezorConfig, ape.config.get_config("trezor"))
+        value = config.hd_path
+
+    return HDBasePath(value)
+
+
+hd_path_option = click.option(
+    "--hd-path",
+    help="The Ethereum account derivation path prefix (defaults to config value).",
+    callback=handle_hd_path,
+)
 
 
 @cli.command()
 @ape_cli_context()
 @non_existing_alias_argument()
-@click.option(
-    "--hd-path",
-    help="The Ethereum account derivation path prefix (defaults to m/44'/60'/0'/0).",
-    callback=lambda ctx, param, arg: HDBasePath(arg),
-)
+@hd_path_option
 def add(cli_ctx, alias, hd_path):
     """Add a account from your Trezor hardware wallet"""
 

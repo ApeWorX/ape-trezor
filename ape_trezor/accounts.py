@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Iterator, Optional
 
-from ape.api.accounts import AccountAPI, AccountContainerAPI, TransactionAPI
+from ape.api import AccountAPI, AccountContainerAPI, PluginConfig, TransactionAPI
 from ape.types import AddressType, MessageSignature, TransactionSignature
 from eth_account.messages import SignableMessage
 from hexbytes import HexBytes
@@ -10,6 +10,10 @@ from hexbytes import HexBytes
 from ape_trezor.client import TrezorAccountClient
 from ape_trezor.exceptions import TrezorAccountError, TrezorSigningError
 from ape_trezor.hdpath import HDPath
+
+
+class TrezorConfig(PluginConfig):
+    hd_path: str = "m/44'/60'/0'/0"
 
 
 class AccountContainer(AccountContainerAPI):
@@ -28,7 +32,7 @@ class AccountContainer(AccountContainerAPI):
     @property
     def accounts(self) -> Iterator[AccountAPI]:
         for account_file in self._account_files:
-            yield TrezorAccount(account_file_path=account_file)  # type: ignore
+            yield TrezorAccount(account_file_path=account_file)
 
     def save_account(self, alias: str, address: str, hd_path: str):
         """
@@ -60,7 +64,7 @@ class TrezorAccount(AccountAPI):
         return self.network_manager.ethereum.decode_address(self.account_file["address"])
 
     @property
-    def hdpath(self) -> HDPath:
+    def hd_path(self) -> HDPath:
         raw_path = self.account_file["hdpath"]
         return HDPath(raw_path)
 
@@ -71,7 +75,7 @@ class TrezorAccount(AccountAPI):
     @property
     def client(self) -> TrezorAccountClient:
         if self.account_client is None:
-            self.account_client = TrezorAccountClient(self.address, self.hdpath)
+            self.account_client = TrezorAccountClient(self.address, self.hd_path)
 
         return self.account_client
 
@@ -89,7 +93,7 @@ class TrezorAccount(AccountAPI):
                 f"Unsupported message-signing specification, (version={version!r})"
             )
 
-        return MessageSignature(*signed_msg)  # type: ignore
+        return MessageSignature(*signed_msg)
 
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionSignature]:
         txn_data = txn.dict()
@@ -136,4 +140,4 @@ class TrezorAccount(AccountAPI):
         else:
             raise TrezorAccountError(f"Message type {tx_type} is not supported.")
 
-        return TransactionSignature(v=v, r=r, s=s)  # type: ignore
+        return TransactionSignature(v=v, r=r, s=s)

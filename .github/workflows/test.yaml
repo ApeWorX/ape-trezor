@@ -7,10 +7,10 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-        - uses: actions/checkout@v2
+        - uses: actions/checkout@v3
 
         - name: Setup Python
-          uses: actions/setup-python@v2
+          uses: actions/setup-python@v4
           with:
               python-version: 3.8
 
@@ -22,20 +22,20 @@ jobs:
         - name: Run Black
           run: black --check .
 
-        - name: Run flake8
-          run: flake8 .
-
         - name: Run isort
           run: isort --check-only .
+
+        - name: Run flake8
+          run: flake8 .
 
     type-check:
         runs-on: ubuntu-latest
 
         steps:
-        - uses: actions/checkout@v2
+        - uses: actions/checkout@v3
 
         - name: Setup Python
-          uses: actions/setup-python@v2
+          uses: actions/setup-python@v4
           with:
               python-version: 3.8
 
@@ -56,10 +56,10 @@ jobs:
                 python-version: [3.8, 3.9, "3.10"]
 
         steps:
-        - uses: actions/checkout@v2
+        - uses: actions/checkout@v3
 
         - name: Setup Python
-          uses: actions/setup-python@v2
+          uses: actions/setup-python@v4
           with:
               python-version: ${{ matrix.python-version }}
 
@@ -79,10 +79,10 @@ jobs:
 #            fail-fast: true
 #
 #        steps:
-#        - uses: actions/checkout@v2
+#        - uses: actions/checkout@v3
 #
 #        - name: Setup Python
-#          uses: actions/setup-python@v2
+#          uses: actions/setup-python@v4
 #          with:
 #              python-version: 3.8
 #

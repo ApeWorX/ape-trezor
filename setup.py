@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from setuptools import find_packages, setup  # type: ignore
+from setuptools import find_packages, setup
 
 extras_require = {
     "test": [  # `test` GitHub Action jobs uses this
@@ -12,10 +12,11 @@ extras_require = {
         "eip712",  # Used for cleaner test cases
     ],
     "lint": [
-        "black>=22.6.0,<23.0",  # auto-formatter and linter
-        "mypy==0.982",  # Static type analyzer
-        "flake8>=4.0.1,<5.0",  # Style linter
-        "isort>=5.10.1,<6.0",  # Import sorting linter
+        "black>=22.12.0",  # auto-formatter and linter
+        "mypy>=0.991",  # Static type analyzer
+        "types-setuptools",  # Needed for mypy typeshed
+        "flake8>=5.0.4",  # Style linter
+        "isort>=5.10.1",  # Import sorting linter
     ],
     "doc": [
         "Sphinx>=3.4.3,<4",  # Documentation generator
@@ -65,7 +66,7 @@ setup(
         "eth-account",  # Use same version as eth-ape
         "eth-typing>=3.1",  # Influenced by eth-ape so no upper pin
         "click",  # Use same version as eth-ape
-        "trezor[ethereum]>=0.13.3,<0.14",
+        "trezor[ethereum]>=0.13.5,<0.14",
     ],
     entry_points={
         "ape_cli_subcommands": [
