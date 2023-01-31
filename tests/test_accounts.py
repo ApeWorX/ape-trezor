@@ -67,9 +67,9 @@ def test_sign_static_fee_transaction(
         constants.SIG_S,
     )
     actual = trezor_account.sign_transaction(static_fee_transaction)
-    assert actual.v == constants.SIG_V
-    assert actual.r == constants.SIG_R
-    assert actual.s == constants.SIG_S
+    assert actual.signature.v == constants.SIG_V
+    assert actual.signature.r == constants.SIG_R
+    assert actual.signature.s == constants.SIG_S
     mock_client.sign_static_fee_transaction.assert_called_once_with(
         chain_id=constants.CHAIN_ID,
         data=b"",
@@ -90,9 +90,9 @@ def test_sign_dynamic_fee_transaction(
         constants.SIG_S,
     )
     actual = trezor_account.sign_transaction(dynamic_fee_transaction)
-    assert actual.v == constants.SIG_V
-    assert actual.r == constants.SIG_R
-    assert actual.s == constants.SIG_S
+    assert actual.signature.v == constants.SIG_V
+    assert actual.signature.r == constants.SIG_R
+    assert actual.signature.s == constants.SIG_S
     mock_client.sign_dynamic_fee_transaction.assert_called_once_with(
         chain_id=constants.CHAIN_ID,
         data=b"",

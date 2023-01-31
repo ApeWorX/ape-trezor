@@ -4,9 +4,9 @@ Ape Trezor is a plugin for [Ape Framework](https://github.com/ApeWorx/ape) which
 
 ## Dependencies
 
-* [python3](https://www.python.org/downloads) version 3.8 or greater, python3-dev
+- [python3](https://www.python.org/downloads) version 3.8 or greater, python3-dev
 
-**Note**: USB does not work in WSL2 environments natively and is [not currently supported](https://github.com/microsoft/WSL/issues/5158). 
+**Note**: USB does not work in WSL2 environments natively and is [not currently supported](https://github.com/microsoft/WSL/issues/5158).
 
 ## Installation
 
@@ -38,7 +38,7 @@ Trezor accounts have the following capabilities in `ape`:
 To use the Trezor plugin, you must have the Trezor USB device connected and unlocked.
 
 **WARNING**: When the Trezor Suite is open, you may face additional connection issues.
- It is recommended to not have the Trezor Suite application open while using the plugin.
+It is recommended to not have the Trezor Suite application open while using the plugin.
 
 ## Add Accounts
 
@@ -55,8 +55,8 @@ ape trezor add <alias> --hd-path "m/44'/1'/0'/0"
 ```
 
 **WARNING**: When using 3rd party wallets, such as this plugin, `trezorlib` discourages signing transactions from the default Ethereum HD Path `m/44'/60'/0'/0`.
- Changing the HD-Path in that circumstance will allow fewer warnings from both Ape and the device, as well as improved security.
- See https://github.com/trezor/trezor-firmware/issues/1336#issuecomment-720126545 for more information.
+Changing the HD-Path in that circumstance will allow fewer warnings from both Ape and the device, as well as improved security.
+See https://github.com/trezor/trezor-firmware/issues/1336#issuecomment-720126545 for more information.
 
 ```yaml
 trezor:

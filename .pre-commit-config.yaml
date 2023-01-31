@@ -15,7 +15,7 @@ repos:
       - id: black
         name: black
 
--   repo: https://gitlab.com/pycqa/flake8
+-   repo: https://github.com/pycqa/flake8
     rev: 5.0.4
     hooks:
     -   id: flake8
@@ -26,6 +26,11 @@ repos:
     -   id: mypy
         additional_dependencies: [types-PyYAML, types-setuptools, pydantic]
 
+-   repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.14
+    hooks:
+    -   id: mdformat
+        additional_dependencies: [mdformat-gfm, mdformat-frontmatter]
 
 default_language_version:
     python: python3

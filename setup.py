@@ -18,6 +18,9 @@ extras_require = {
         "types-PyYAML",  # Needed for mypy typeshed
         "flake8>=5.0.4",  # Style linter
         "isort>=5.10.1",  # Import sorting linter
+        "mdformat>=0.7.16",  # Auto-formatter for markdown
+        "mdformat-gfm>=0.3.5",  # Needed for formatting GitHub-flavored markdown
+        "mdformat-frontmatter>=0.4.1",  # Needed for frontmatters-style headers in issue templates
     ],
     "doc": [
         "Sphinx>=3.4.3,<4",  # Documentation generator
@@ -63,7 +66,7 @@ setup(
     url="https://github.com/ApeWorX/ape-trezor",
     include_package_data=True,
     install_requires=[
-        "eth-ape>=0.5.0,<0.6",
+        "eth-ape>=0.6.0,<0.7",
         "eth-account",  # Use same version as eth-ape
         "eth-typing>=3.1",  # Influenced by eth-ape so no upper pin
         "click",  # Use same version as eth-ape
