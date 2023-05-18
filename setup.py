@@ -12,7 +12,7 @@ extras_require = {
         "eip712",  # Used for cleaner test cases
     ],
     "lint": [
-        "black>=22.12.0",  # auto-formatter and linter
+        "black>=23.3.0",  # auto-formatter and linter
         "mypy>=0.991",  # Static type analyzer
         "types-setuptools",  # Needed for mypy typeshed
         "types-PyYAML",  # Needed for mypy typeshed
@@ -66,11 +66,11 @@ setup(
     url="https://github.com/ApeWorX/ape-trezor",
     include_package_data=True,
     install_requires=[
-        "eth-ape>=0.6.0,<0.7",
+        "eth-ape>=0.6.8,<0.7",
         "eth-account",  # Use same version as eth-ape
         "eth-typing>=3.1",  # Influenced by eth-ape so no upper pin
         "click",  # Use same version as eth-ape
-        "trezor[ethereum]>=0.13.5,<0.14",
+        "trezor[ethereum]>=0.13.6,<0.14",
     ],
     entry_points={
         "ape_cli_subcommands": [
