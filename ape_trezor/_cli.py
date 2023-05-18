@@ -123,7 +123,6 @@ def delete_all(cli_ctx, skip_confirmation):
 @click.argument("message")
 @ape_cli_context()
 def sign_message(cli_ctx, alias, message):
-
     if alias not in accounts.aliases:
         cli_ctx.abort(f"Account with alias '{alias}' does not exist.")
 
@@ -145,7 +144,6 @@ def sign_message(cli_ctx, alias, message):
 @click.argument("message")
 @click.argument("signature")
 def verify_message(message, signature):
-
     eip191message = encode_defunct(text=message)
 
     try:
