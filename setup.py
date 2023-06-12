@@ -12,8 +12,8 @@ extras_require = {
         "eip712",  # Used for cleaner test cases
     ],
     "lint": [
-        "black>=23.3.0",  # auto-formatter and linter
-        "mypy>=0.991",  # Static type analyzer
+        "black>=23.3.0,<24",  # auto-formatter and linter
+        "mypy>=0.991,<1",  # Static type analyzer
         "types-setuptools",  # Needed for mypy typeshed
         "types-PyYAML",  # Needed for mypy typeshed
         "flake8>=5.0.4",  # Style linter
@@ -96,5 +96,6 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
 )
