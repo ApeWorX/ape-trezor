@@ -11,13 +11,13 @@ import yaml
 from ape._cli import cli as root_ape_cli
 from ape.managers.config import CONFIG_FILE_NAME
 from click.testing import CliRunner
+from eth_pydantic_types import HexBytes
 from eth_typing import HexAddress, HexStr
-from hexbytes import HexBytes
 
 from ape_trezor import _cli
 from ape_trezor.hdpath import HDBasePath, HDPath
+from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
 
-# NOTE: Ensure that we don't use local paths for these
 ape.config.DATA_FOLDER = Path(mkdtemp()).resolve()
 
 TEST_ADDRESS = HexAddress(HexStr("0x0A78AAAAA2122100000b9046f0A085AB2E111113"))
@@ -92,7 +92,7 @@ def constants():
 
 @pytest.fixture(scope="session")
 def hd_path():
-    return HDBasePath("m/44'/60'/0'/0")
+    return HDBasePath(DEFAULT_ETHEREUM_HD_PATH)
 
 
 @pytest.fixture(scope="session")

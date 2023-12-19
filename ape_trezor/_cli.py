@@ -1,6 +1,5 @@
 from typing import cast
 
-import ape
 import click
 from ape import accounts
 from ape.cli import (
@@ -51,8 +50,11 @@ def _list(cli_ctx):
 
 def handle_hd_path(ctx, param, value):
     if not value:
-        config = cast(TrezorConfig, ape.config.get_config("trezor"))
-        value = config.hd_path
+        try:
+            config = cast(TrezorConfig, accounts.config_manager.get_config("trezor"))
+            value = config.hd_path
+        except Exception:
+            value = DEFAULT_ETHEREUM_HD_PATH
 
     return HDBasePath(value)
 

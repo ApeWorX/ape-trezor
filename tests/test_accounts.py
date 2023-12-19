@@ -4,14 +4,15 @@ from eth_account.messages import encode_defunct
 
 
 @pytest.fixture
-def trezor_account(accounts, address, account_hd_path, mock_client):
+def trezor_account(mocker, accounts, address, account_hd_path, mock_client):
     container = accounts.containers["trezor"]
     alias = "trezorplugintests"
     container.save_account(alias, address, account_hd_path.path)
+    patch = mocker.patch("ape_trezor.accounts._create_client")
+    patch.return_value = mock_client
 
     try:
         account = accounts.load(alias)
-        account.account_client = mock_client
         yield account
     finally:
         container.delete_account(alias)
