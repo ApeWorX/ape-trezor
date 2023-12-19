@@ -1,19 +1,23 @@
 import json
+from functools import cached_property
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Any, Dict, Iterator, Optional
 
 from ape.api import AccountAPI, AccountContainerAPI, PluginConfig, TransactionAPI
 from ape.types import AddressType, MessageSignature, TransactionSignature
-from eth_account.messages import SignableMessage
-from hexbytes import HexBytes
+from dataclassy import asdict
+from eip712 import EIP712Message, EIP712Type
+from eth_account.messages import SignableMessage, encode_defunct
+from eth_pydantic_types import HexBytes
 
 from ape_trezor.client import TrezorAccountClient
 from ape_trezor.exceptions import TrezorAccountError, TrezorSigningError
 from ape_trezor.hdpath import HDPath
+from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
 
 
 class TrezorConfig(PluginConfig):
-    hd_path: str = "m/44'/60'/0'/0"
+    hd_path: str = DEFAULT_ETHEREUM_HD_PATH
 
 
 class AccountContainer(AccountContainerAPI):
@@ -52,9 +56,6 @@ class AccountContainer(AccountContainerAPI):
 class TrezorAccount(AccountAPI):
     account_file_path: Path
 
-    # Optional because it's lazily loaded
-    account_client: Optional[TrezorAccountClient] = None
-
     @property
     def alias(self) -> str:
         return self.account_file_path.stem
@@ -72,31 +73,69 @@ class TrezorAccount(AccountAPI):
     def account_file(self) -> dict:
         return json.loads(self.account_file_path.read_text())
 
-    @property
+    @cached_property
     def client(self) -> TrezorAccountClient:
-        if self.account_client is None:
-            self.account_client = TrezorAccountClient(self.address, self.hd_path)
+        return _create_client(self.address, self.hd_path)
 
-        return self.account_client
-
-    def sign_message(self, msg: SignableMessage) -> Optional[MessageSignature]:
-        version = msg.version
-
-        if version == b"E":
+    def sign_message(self, msg: Any, **signer_options) -> Optional[MessageSignature]:
+        if isinstance(msg, EIP712Message):
+            data = _prepare_data_for_hashing(msg._body_)
+            signed_msg = self.client.sign_typed_data(data)
+        elif isinstance(msg, dict):
+            # Raw typed data.
+            signed_msg = self.client.sign_typed_data(msg)
+        elif isinstance(msg, SignableMessage) and msg.version == b"E":
             signed_msg = self.client.sign_personal_message(msg.body)
+        elif isinstance(msg, SignableMessage) and msg.version == b"\x01":
+            # Using EIP-712 without eip712 package.
+            # TODO: Investigate why doesn't work.
+            try:
+                signed_msg = self.client.sign_typed_data_hash(msg.header, msg.body)
+            except Exception as err:
+                raise TrezorAccountError(
+                    "Signing typed data hash is not generally not recommended. "
+                    f"Try using eip712 package or a raw dict instead.\n{err}"
+                ) from err
+        elif isinstance(msg, SignableMessage):
+            try:
+                version_str = msg.version.decode("utf8")
+            except Exception:
+                try:
+                    version_str = HexBytes(msg.version).hex()
+                except Exception:
+                    version_str = None
 
-        # elif version == b"\x01":
-        #     signed_msg = self.client.sign_typed_data(msg.header, msg.body)
+            message = "Unable to sign version"
+            suffix = f" '{version_str}'" if version_str else ""
+            raise TrezorSigningError(f"{message}{suffix}.")
 
+        elif isinstance(msg, str):
+            msg = encode_defunct(text=msg)
+            signed_msg = self.client.sign_personal_message(msg.body)
+        elif isinstance(msg, int):
+            msg = encode_defunct(hexstr=HexBytes(msg).hex())
+            signed_msg = self.client.sign_personal_message(msg.body)
+        elif isinstance(msg, bytes):
+            msg = encode_defunct(primitive=msg)
+            signed_msg = self.client.sign_personal_message(msg.body)
         else:
-            raise TrezorSigningError(
-                f"Unsupported message-signing specification, (version={version!r})"
-            )
+            type_str = getattr(type(msg), "__name__", None)
+            if not type_str:
+                try:
+                    type_str = f"{type(msg)}"
+                except Exception:
+                    type_str = None
+
+            message = "Unknown message type"
+            if type_str:
+                message = f"{message} {type_str}"
+
+            raise TypeError(message)
 
         return MessageSignature(*signed_msg)
 
     def sign_transaction(self, txn: TransactionAPI, **kwargs) -> Optional[TransactionAPI]:
-        txn_data = txn.dict()
+        txn_data = txn.model_dump(mode="json", by_alias=True)
 
         if "type" not in txn_data and "gasPrice" in txn_data:
             tx_type = "0x00"
@@ -142,3 +181,24 @@ class TrezorAccount(AccountAPI):
 
         txn.signature = TransactionSignature(v=v, r=r, s=s)
         return txn
+
+
+def _prepare_data_for_hashing(data: Dict) -> Dict:
+    # NOTE: Private method copied from eip712 package.
+    result: Dict = {}
+
+    for key, value in data.items():
+        item: Any = value
+        if isinstance(value, EIP712Type):
+            item = asdict(value)
+        elif isinstance(value, dict):
+            item = _prepare_data_for_hashing(item)
+
+        result[key] = item
+
+    return result
+
+
+def _create_client(address: AddressType, hd_path: HDPath):
+    # Separated so can be mocked easily in tests.
+    return TrezorAccountClient(address, hd_path)

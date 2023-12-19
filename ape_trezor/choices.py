@@ -53,7 +53,7 @@ class AddressPromptChoice(PromptChoice):
             return None
 
         address = super().convert(value, param, ctx)
-        self._choice_index = self.choices.index(address)
+        self._choice_index = self.choices.index(address)  # type: ignore
         return address
 
     def get_user_selected_account(self) -> Tuple[str, HDPath]:

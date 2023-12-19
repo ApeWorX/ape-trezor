@@ -1,7 +1,7 @@
 import ape
 import pytest
 from ape.logging import LogLevel
-from hexbytes import HexBytes
+from eth_pydantic_types import HexBytes
 from trezorlib.messages import SafetyCheckLevel
 
 from ape_trezor.client import TrezorAccountClient, TrezorClient, extract_signature_vrs_bytes
