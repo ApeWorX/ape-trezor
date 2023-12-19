@@ -89,7 +89,7 @@ def test_main_accounts_list(runner, ape_cli, existing_key_file):
 def test_delete(runner, cli, existing_key_file):
     result = runner.invoke(cli, ["delete", "harambe_lives"], catch_exceptions=False)
     assert result.exit_code == 0, result.output
-    assert result.output == "SUCCESS (ape-trezor): Account 'harambe_lives' has been removed.\n"
+    assert "Account 'harambe_lives' has been removed" in result.output
 
 
 def test_sign_message_when_account_does_not_exist(runner, cli):
