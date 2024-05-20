@@ -1,15 +1,15 @@
 import json
-import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Dict, Optional
+from typing import Optional
 
 import ape
 import pytest
 import yaml
 from ape._cli import cli as root_ape_cli
 from ape.managers.config import CONFIG_FILE_NAME
+from ape.utils import create_tempdir
 from click.testing import CliRunner
 from eth_pydantic_types import HexBytes
 from eth_typing import HexAddress, HexStr
@@ -103,10 +103,8 @@ def account_hd_path():
 @pytest.fixture(scope="session")
 def temp_config(config):
     @contextmanager
-    def func(data: Dict, package_json: Optional[Dict] = None):
-        with tempfile.TemporaryDirectory() as temp_dir_str:
-            temp_dir = Path(temp_dir_str)
-
+    def func(data: dict, package_json: Optional[dict] = None):
+        with create_tempdir() as temp_dir:
             config._cached_configs = {}
             config_file = temp_dir / CONFIG_FILE_NAME
             config_file.touch()

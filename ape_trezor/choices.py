@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 import click
 from ape.cli import PromptChoice
@@ -56,7 +56,7 @@ class AddressPromptChoice(PromptChoice):
         self._choice_index = self.choices.index(address)  # type: ignore
         return address
 
-    def get_user_selected_account(self) -> Tuple[str, HDPath]:
+    def get_user_selected_account(self) -> tuple[str, HDPath]:
         """Returns the selected address from the user along with the HD path.
         The user is able to page using special characters ``n`` and ``p``.
         """
