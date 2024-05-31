@@ -67,7 +67,7 @@ setup(
     url="https://github.com/ApeWorX/ape-trezor",
     include_package_data=True,
     install_requires=[
-        "eth-ape>=0.7.0,<0.8",
+        "eth-ape>=0.8.1,<0.9",
         "click",  # Use same version as eth-ape
         "trezor[ethereum]>=0.13.8,<0.14",
         # ApeWorx packages
