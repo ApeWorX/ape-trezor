@@ -1,15 +1,10 @@
 import json
-from contextlib import contextmanager
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Optional
 
 import ape
 import pytest
-import yaml
 from ape._cli import cli as root_ape_cli
-from ape.managers.config import CONFIG_FILE_NAME
-from ape.utils import create_tempdir
 from click.testing import CliRunner
 from eth_pydantic_types import HexBytes
 from eth_typing import HexAddress, HexStr
@@ -31,6 +26,11 @@ def accounts():
 @pytest.fixture(scope="session")
 def config():
     return ape.config
+
+
+@pytest.fixture(scope="session")
+def project():
+    return ape.project
 
 
 @pytest.fixture(scope="session")
@@ -98,27 +98,3 @@ def hd_path():
 @pytest.fixture(scope="session")
 def account_hd_path():
     return HDPath("m/44'/60'/0'/1")
-
-
-@pytest.fixture(scope="session")
-def temp_config(config):
-    @contextmanager
-    def func(data: dict, package_json: Optional[dict] = None):
-        with create_tempdir() as temp_dir:
-            config._cached_configs = {}
-            config_file = temp_dir / CONFIG_FILE_NAME
-            config_file.touch()
-            config_file.write_text(yaml.dump(data))
-            config.load(force_reload=True)
-
-            if package_json:
-                package_json_file = temp_dir / "package.json"
-                package_json_file.write_text(json.dumps(package_json))
-
-            with config.using_project(temp_dir):
-                yield temp_dir
-
-            config_file.unlink()
-            config._cached_configs = {}
-
-    return func
