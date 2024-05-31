@@ -1,7 +1,8 @@
 import json
+from collections.abc import Iterator
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional
+from typing import Any, Optional
 
 from ape.api import AccountAPI, AccountContainerAPI, PluginConfig, TransactionAPI
 from ape.types import AddressType, MessageSignature, TransactionSignature
@@ -183,9 +184,9 @@ class TrezorAccount(AccountAPI):
         return txn
 
 
-def _prepare_data_for_hashing(data: Dict) -> Dict:
+def _prepare_data_for_hashing(data: dict) -> dict:
     # NOTE: Private method copied from eip712 package.
-    result: Dict = {}
+    result: dict = {}
 
     for key, value in data.items():
         item: Any = value

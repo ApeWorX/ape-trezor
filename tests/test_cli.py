@@ -51,7 +51,7 @@ def test_add(mock_client, runner, cli, accounts, clean, mock_client_factory, cap
     assert log_warning == expected
 
 
-def test_add_specify_hd_path(mock_client, runner, cli, accounts, clean, mock_client_factory):
+def test_add_specify_hd_path(mock_client, runner, cli, clean, mock_client_factory):
     mock_client.get_account_path.return_value = ZERO_ADDRESS
     hd_path = "m/44'/1'/0'/0"
     result = runner.invoke(cli, ["add", NEW_ACCOUNT_ALIAS, "--hd-path", hd_path], input="0\n")
@@ -60,12 +60,11 @@ def test_add_specify_hd_path(mock_client, runner, cli, accounts, clean, mock_cli
 
 
 def test_add_uses_hd_path_from_config(
-    mock_client, temp_config, runner, cli, clean, mock_client_factory, accounts
+    mock_client, project, runner, cli, clean, mock_client_factory, accounts
 ):
     mock_client.get_account_path.return_value = ZERO_ADDRESS
     hd_path = "m/1'/60'/0'/0"
-    data = {"trezor": {"hd_path": hd_path}}
-    with temp_config(data):
+    with project.temp_config(trezor={"hd_path": hd_path}):
         result = runner.invoke(cli, ["add", NEW_ACCOUNT_ALIAS], input="0\n")
         assert result.exit_code == 0, result.output
         assert mock_client_factory.call_args[0][0].path == hd_path

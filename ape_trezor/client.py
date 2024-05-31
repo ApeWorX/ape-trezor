@@ -1,4 +1,5 @@
-from typing import Callable, Dict, Optional, Tuple
+from collections.abc import Callable
+from typing import Optional
 
 from ape.logging import logger
 from eth_typing.evm import ChecksumAddress
@@ -68,7 +69,7 @@ class TrezorClient:
             raise TrezorClientError(str(err), status=code) from err
 
 
-def extract_signature_vrs_bytes(signature_bytes: bytes) -> Tuple[int, bytes, bytes]:
+def extract_signature_vrs_bytes(signature_bytes: bytes) -> tuple[int, bytes, bytes]:
     """
     Breaks `signature_bytes` into 3 chunks vrs, where `v` is 1 byte, `r` is 32
     bytes, and `s` is 32 bytes.
@@ -109,7 +110,7 @@ class TrezorAccountClient:
     def address(self) -> str:
         return self._address
 
-    def sign_personal_message(self, message: bytes) -> Tuple[int, bytes, bytes]:
+    def sign_personal_message(self, message: bytes) -> tuple[int, bytes, bytes]:
         """
         Sign an Ethereum message only following the EIP 191 specification and
         using your Trezor device. You will need to follow the prompts on the device
@@ -120,23 +121,23 @@ class TrezorAccountClient:
         )
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
 
-    def sign_typed_data(self, data: Dict) -> Tuple[int, bytes, bytes]:
+    def sign_typed_data(self, data: dict) -> tuple[int, bytes, bytes]:
         """
         Sends a dict of data to the device and is much more obvious and secure
         than signing a hash alone.
 
         Args:
-            data(Dict): The data to sign, following EIP-712.
+            data(dict): The data to sign, following EIP-712.
 
         Returns:
-            Tuple[int, bytes, bytes]: A signature tuple.
+            tuple[int, bytes, bytes]: A signature tuple.
         """
         signed_data = sign_typed_data(self.client, self._account_hd_path.address_n, data)
         return extract_signature_vrs_bytes(signature_bytes=signed_data.signature)
 
     def sign_typed_data_hash(
         self, domain_hash: bytes, message_hash: bytes
-    ) -> Tuple[int, bytes, bytes]:
+    ) -> tuple[int, bytes, bytes]:
         """
         Sign an Ethereum message following the EIP 712 specification.
         This approach still uses the hash on the device and may not look
@@ -147,20 +148,20 @@ class TrezorAccountClient:
             message_hash (bytes): The hashed message portion of the data.
 
         Returns:
-            Tuple[int, bytes, bytes]: A signature tuple.
+            tuple[int, bytes, bytes]: A signature tuple.
         """
         signed_data = sign_typed_data_hash(
             self.client, self._account_hd_path.address_n, domain_hash, message_hash=message_hash
         )
         return extract_signature_vrs_bytes(signature_bytes=signed_data.signature)
 
-    def sign_static_fee_transaction(self, **kwargs) -> Tuple[int, bytes, bytes]:
+    def sign_static_fee_transaction(self, **kwargs) -> tuple[int, bytes, bytes]:
         return self._sign_transaction(sign_tx, **kwargs)
 
-    def sign_dynamic_fee_transaction(self, **kwargs) -> Tuple[int, bytes, bytes]:
+    def sign_dynamic_fee_transaction(self, **kwargs) -> tuple[int, bytes, bytes]:
         return self._sign_transaction(sign_tx_eip1559, **kwargs)
 
-    def _sign_transaction(self, lib_call: Callable, **kwargs) -> Tuple[int, bytes, bytes]:
+    def _sign_transaction(self, lib_call: Callable, **kwargs) -> tuple[int, bytes, bytes]:
         did_change = self._allow_default_ethereum_account_signing()
         try:
             return lib_call(self.client, self._account_hd_path.address_n, **kwargs)
