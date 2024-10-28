@@ -1,22 +1,17 @@
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import click
-from ape import accounts
-from ape.cli import (
-    ape_cli_context,
-    existing_alias_argument,
-    non_existing_alias_argument,
-    skip_confirmation_option,
-)
+from ape.cli.arguments import existing_alias_argument, non_existing_alias_argument
+from ape.cli.options import ape_cli_context, skip_confirmation_option
+from ape.utils.basemodel import ManagerAccessMixin
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
-from ape_trezor.accounts import TrezorAccount, TrezorConfig
-from ape_trezor.choices import AddressPromptChoice
-from ape_trezor.client import create_client
 from ape_trezor.exceptions import TrezorSigningError
-from ape_trezor.hdpath import HDBasePath
 from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
+
+if TYPE_CHECKING:
+    from ape.api.accounts import AccountAPI
 
 
 @click.group(short_help="Manage Trezor accounts")
@@ -31,7 +26,9 @@ def cli():
 def _list(cli_ctx):
     """List your Trezor accounts in ape"""
 
-    trezor_accounts = accounts.get_accounts_by_type(type_=TrezorAccount)
+    from ape_trezor.accounts import TrezorAccount
+
+    trezor_accounts = ManagerAccessMixin.account_manager.get_accounts_by_type(type_=TrezorAccount)
     num_of_accts = len(trezor_accounts)
 
     if num_of_accts == 0:
@@ -49,9 +46,12 @@ def _list(cli_ctx):
 
 
 def handle_hd_path(ctx, param, value):
+    from ape_trezor.accounts import TrezorConfig
+    from ape_trezor.hdpath import HDBasePath
+
     if not value:
         try:
-            config = cast(TrezorConfig, accounts.config_manager.get_config("trezor"))
+            config = cast(TrezorConfig, ManagerAccessMixin.config_manager.get_config("trezor"))
             value = config.hd_path
         except Exception:
             value = DEFAULT_ETHEREUM_HD_PATH
@@ -79,21 +79,30 @@ def add(cli_ctx, alias, hd_path):
             "Please use an alternative HD-Path for a safer integration."
         )
 
+    from ape_trezor.choices import AddressPromptChoice
+    from ape_trezor.client import create_client
+
     client = create_client(hd_path)
     choices = AddressPromptChoice(client, hd_path)
     address, account_hd_path = choices.get_user_selected_account()
-    container = accounts.containers.get("trezor")
+    container = ManagerAccessMixin.account_manager.containers.get("trezor")
     container.save_account(alias, address, str(account_hd_path))
     cli_ctx.logger.success(f"Account '{address}' successfully added with alias '{alias}'.")
 
 
+def _filter_accounts(acct: "AccountAPI") -> bool:
+    from ape_trezor.accounts import TrezorAccount
+
+    return isinstance(acct, TrezorAccount)
+
+
 @cli.command()
 @ape_cli_context()
-@existing_alias_argument(account_type=TrezorAccount)
+@existing_alias_argument(account_type=_filter_accounts)
 def delete(cli_ctx, alias):
     """Remove a Trezor account from your ape configuration"""
 
-    container = accounts.containers.get("trezor")
+    container = ManagerAccessMixin.account_manager.containers.get("trezor")
     container.delete_account(alias)
     cli_ctx.logger.success(f"Account '{alias}' has been removed.")
 
@@ -103,9 +112,10 @@ def delete(cli_ctx, alias):
 @skip_confirmation_option("Don't ask for confirmation when removing all accounts")
 def delete_all(cli_ctx, skip_confirmation):
     """Remove all trezor accounts from your ape configuration"""
+    from ape_trezor.accounts import TrezorAccount
 
-    container = accounts.containers.get("trezor")
-    trezor_accounts = accounts.get_accounts_by_type(type_=TrezorAccount)
+    container = ManagerAccessMixin.account_manager.containers.get("trezor")
+    trezor_accounts = ManagerAccessMixin.account_manager.get_accounts_by_type(type_=TrezorAccount)
     if len(trezor_accounts) == 0:
         cli_ctx.logger.warning("No accounts found.")
         return
@@ -125,11 +135,11 @@ def delete_all(cli_ctx, skip_confirmation):
 @click.argument("message")
 @ape_cli_context()
 def sign_message(cli_ctx, alias, message):
-    if alias not in accounts.aliases:
+    if alias not in cli_ctx.account_manager.aliases:
         cli_ctx.abort(f"Account with alias '{alias}' does not exist.")
 
     eip191_message = encode_defunct(text=message)
-    account = accounts.load(alias)
+    account = cli_ctx.account_manager.load(alias)
     signature = account.sign_message(eip191_message)
     signature_bytes = signature.encode_rsv()
 
@@ -143,9 +153,10 @@ def sign_message(cli_ctx, alias, message):
 
 
 @cli.command(short_help="Verify a message with your Trezor device")
+@ape_cli_context()
 @click.argument("message")
 @click.argument("signature")
-def verify_message(message, signature):
+def verify_message(cli_ctx, message, signature):
     eip191message = encode_defunct(text=message)
 
     try:
@@ -154,6 +165,10 @@ def verify_message(message, signature):
         message = "Message cannot be verified. Check the signature and try again."
         raise TrezorSigningError(message) from exc
 
-    alias = accounts[signer_address].alias if signer_address in accounts else "n/a"
+    alias = (
+        cli_ctx.account_manager[signer_address].alias
+        if signer_address in cli_ctx.account_manager
+        else "n/a"
+    )
 
     click.echo(f"Signer: {signer_address}  {alias}")
