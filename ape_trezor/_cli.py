@@ -3,9 +3,6 @@ from typing import TYPE_CHECKING, cast
 import click
 from ape.cli.arguments import existing_alias_argument, non_existing_alias_argument
 from ape.cli.options import ape_cli_context, skip_confirmation_option
-from ape.utils.basemodel import ManagerAccessMixin
-from eth_account import Account
-from eth_account.messages import encode_defunct
 
 from ape_trezor.exceptions import TrezorSigningError
 from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
@@ -49,6 +46,8 @@ def _list(cli_ctx):
 
 
 def handle_hd_path(ctx, param, value):
+    from ape.utils.basemodel import ManagerAccessMixin
+
     from ape_trezor.accounts import TrezorConfig
     from ape_trezor.hdpath import HDBasePath
 
@@ -144,6 +143,9 @@ def delete_all(cli_ctx, skip_confirmation):
 @click.argument("message")
 @ape_cli_context()
 def sign_message(cli_ctx, alias, message):
+    from eth_account.account import Account
+    from eth_account.messages import encode_defunct
+
     if alias not in cli_ctx.account_manager.aliases:
         cli_ctx.abort(f"Account with alias '{alias}' does not exist.")
 
@@ -166,6 +168,9 @@ def sign_message(cli_ctx, alias, message):
 @click.argument("message")
 @click.argument("signature")
 def verify_message(cli_ctx, message, signature):
+    from eth_account.account import Account
+    from eth_account.messages import encode_defunct
+
     eip191message = encode_defunct(text=message)
 
     try:
