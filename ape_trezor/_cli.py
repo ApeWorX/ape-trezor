@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, cast
 import click
 from ape.cli.arguments import existing_alias_argument, non_existing_alias_argument
 from ape.cli.options import ape_cli_context, skip_confirmation_option
+from ape.utils.basemodel import ManagerAccessMixin
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
@@ -11,6 +12,9 @@ from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
 
 if TYPE_CHECKING:
     from ape.api.accounts import AccountAPI
+
+    from ape_trezor.client import TrezorClient
+    from ape_trezor.hdpath import HDBasePath
 
 
 @click.group(short_help="Manage Trezor accounts")
@@ -50,7 +54,7 @@ def handle_hd_path(ctx, param, value):
 
     if not value:
         try:
-            config = cast(TrezorConfig, ctx.obj.config_manager.get_config("trezor"))
+            config = cast(TrezorConfig, ManagerAccessMixin.config_manager.get_config("trezor"))
             value = config.hd_path
         except Exception:
             value = DEFAULT_ETHEREUM_HD_PATH
@@ -63,6 +67,13 @@ hd_path_option = click.option(
     help="The Ethereum account derivation path prefix (defaults to config value).",
     callback=handle_hd_path,
 )
+
+
+def create_client(hd_path: "HDBasePath") -> "TrezorClient":
+    # NOTE: Abstracted for testing (and --help performance!) reasons.
+    from ape_trezor.client import create_client as _create_client
+
+    return _create_client(hd_path)
 
 
 @cli.command()
@@ -79,7 +90,6 @@ def add(cli_ctx, alias, hd_path):
         )
 
     from ape_trezor.choices import AddressPromptChoice
-    from ape_trezor.client import create_client
 
     client = create_client(hd_path)
     choices = AddressPromptChoice(client, hd_path)
