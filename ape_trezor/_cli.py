@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, cast
 import click
 from ape.cli.arguments import existing_alias_argument, non_existing_alias_argument
 from ape.cli.options import ape_cli_context, skip_confirmation_option
-from ape.utils.basemodel import ManagerAccessMixin
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
@@ -28,7 +27,7 @@ def _list(cli_ctx):
 
     from ape_trezor.accounts import TrezorAccount
 
-    trezor_accounts = ManagerAccessMixin.account_manager.get_accounts_by_type(type_=TrezorAccount)
+    trezor_accounts = cli_ctx.account_manager.get_accounts_by_type(type_=TrezorAccount)
     num_of_accts = len(trezor_accounts)
 
     if num_of_accts == 0:
@@ -51,7 +50,7 @@ def handle_hd_path(ctx, param, value):
 
     if not value:
         try:
-            config = cast(TrezorConfig, ManagerAccessMixin.config_manager.get_config("trezor"))
+            config = cast(TrezorConfig, ctx.obj.config_manager.get_config("trezor"))
             value = config.hd_path
         except Exception:
             value = DEFAULT_ETHEREUM_HD_PATH
@@ -85,7 +84,7 @@ def add(cli_ctx, alias, hd_path):
     client = create_client(hd_path)
     choices = AddressPromptChoice(client, hd_path)
     address, account_hd_path = choices.get_user_selected_account()
-    container = ManagerAccessMixin.account_manager.containers.get("trezor")
+    container = cli_ctx.account_manager.containers.get("trezor")
     container.save_account(alias, address, str(account_hd_path))
     cli_ctx.logger.success(f"Account '{address}' successfully added with alias '{alias}'.")
 
@@ -102,7 +101,7 @@ def _filter_accounts(acct: "AccountAPI") -> bool:
 def delete(cli_ctx, alias):
     """Remove a Trezor account from your ape configuration"""
 
-    container = ManagerAccessMixin.account_manager.containers.get("trezor")
+    container = cli_ctx.account_manager.containers.get("trezor")
     container.delete_account(alias)
     cli_ctx.logger.success(f"Account '{alias}' has been removed.")
 
@@ -114,8 +113,8 @@ def delete_all(cli_ctx, skip_confirmation):
     """Remove all trezor accounts from your ape configuration"""
     from ape_trezor.accounts import TrezorAccount
 
-    container = ManagerAccessMixin.account_manager.containers.get("trezor")
-    trezor_accounts = ManagerAccessMixin.account_manager.get_accounts_by_type(type_=TrezorAccount)
+    container = cli_ctx.account_manager.containers.get("trezor")
+    trezor_accounts = cli_ctx.account_manager.get_accounts_by_type(type_=TrezorAccount)
     if len(trezor_accounts) == 0:
         cli_ctx.logger.warning("No accounts found.")
         return
