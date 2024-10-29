@@ -1,8 +1,7 @@
 from collections.abc import Callable
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from ape.logging import logger
-from eth_typing.evm import ChecksumAddress
 from trezorlib.client import TrezorClient as LibTrezorClient
 from trezorlib.client import get_default_client
 from trezorlib.device import apply_settings
@@ -25,11 +24,15 @@ from ape_trezor.exceptions import (
     TrezorClientConnectionError,
     TrezorClientError,
 )
-from ape_trezor.hdpath import HDBasePath, HDPath
 from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
 
+if TYPE_CHECKING:
+    from eth_typing.evm import ChecksumAddress
 
-def create_client(hd_path: HDBasePath) -> "TrezorClient":
+    from ape_trezor.hdpath import HDBasePath, HDPath
+
+
+def create_client(hd_path: "HDBasePath") -> "TrezorClient":
     return TrezorClient(hd_path)
 
 
@@ -38,7 +41,7 @@ class TrezorClient:
     This class is a client for the Trezor device.
     """
 
-    def __init__(self, hd_root_path: HDBasePath, client: Optional[LibTrezorClient] = None):
+    def __init__(self, hd_root_path: "HDBasePath", client: Optional[LibTrezorClient] = None):
         if not client:
             try:
                 self.client = get_default_client()
@@ -88,8 +91,8 @@ class TrezorAccountClient:
 
     def __init__(
         self,
-        address: ChecksumAddress,
-        account_hd_path: HDPath,
+        address: "ChecksumAddress",
+        account_hd_path: "HDPath",
         client: Optional[LibTrezorClient] = None,
     ):
         if not client:

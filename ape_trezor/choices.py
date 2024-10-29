@@ -1,11 +1,13 @@
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import click
 from ape.cli import PromptChoice
-from click import Context, Parameter
 
-from ape_trezor.client import TrezorClient
-from ape_trezor.hdpath import HDBasePath, HDPath
+if TYPE_CHECKING:
+    from click import Context, Parameter
+
+    from ape_trezor.client import TrezorClient
+    from ape_trezor.hdpath import HDBasePath, HDPath
 
 
 class AddressPromptChoice(PromptChoice):
@@ -17,8 +19,8 @@ class AddressPromptChoice(PromptChoice):
 
     def __init__(
         self,
-        client: TrezorClient,
-        hd_base_pth: HDBasePath,
+        client: "TrezorClient",
+        hd_base_pth: "HDBasePath",
         index_offset: int = 0,
         page_size: int = DEFAULT_PAGE_SIZE,
     ):
@@ -56,7 +58,7 @@ class AddressPromptChoice(PromptChoice):
         self._choice_index = self.choices.index(address)  # type: ignore
         return address
 
-    def get_user_selected_account(self) -> tuple[str, HDPath]:
+    def get_user_selected_account(self) -> tuple[str, "HDPath"]:
         """Returns the selected address from the user along with the HD path.
         The user is able to page using special characters ``n`` and ``p``.
         """
