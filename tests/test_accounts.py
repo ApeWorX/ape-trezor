@@ -13,6 +13,8 @@ def trezor_account(mocker, accounts, address, account_hd_path, mock_client):
 
     try:
         account = accounts.load(alias)
+        account.__dict__["client"] = mock_client  # In case cached from another test
+        assert account.client == mock_client, "Setup failed: mock client not set"
         yield account
     finally:
         container.delete_account(alias)
