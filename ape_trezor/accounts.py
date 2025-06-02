@@ -194,6 +194,8 @@ def _prepare_data_for_hashing(data: dict) -> dict:
             item = asdict(value)
         elif isinstance(value, dict):
             item = _prepare_data_for_hashing(item)
+        elif isinstance(value, bytes):
+            item = value.hex()
 
         result[key] = item
 
