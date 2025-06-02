@@ -139,14 +139,14 @@ class TrezorAccount(AccountAPI):
         txn_data = txn.model_dump(mode="json", by_alias=True)
 
         if "type" not in txn_data and "gasPrice" in txn_data:
-            tx_type = "0x00"
+            tx_type = HexBytes("0x00")
 
         else:
-            tx_type = txn_data.pop("type", "0x00")
+            tx_type = txn_data.pop("type", HexBytes("0x00"))
             if isinstance(tx_type, int):
-                tx_type = HexBytes(tx_type).hex()
+                tx_type = HexBytes(tx_type)
             elif isinstance(tx_type, bytes):
-                tx_type = HexBytes(tx_type).hex()
+                tx_type = HexBytes(tx_type)
 
         # NOTE: `trezorlib` expects empty bytes when no data.
         data = txn_data.get("data") or b""
@@ -169,10 +169,10 @@ class TrezorAccount(AccountAPI):
 
         txn_data["gas_limit"] = txn_data.pop("gas", 0)
 
-        if tx_type == "0x00":
+        if tx_type == HexBytes("0x00"):
             txn_data["gas_price"] = txn_data.pop("gasPrice", 0)
             v, r, s = self.client.sign_static_fee_transaction(**txn_data)
-        elif tx_type == "0x02":
+        elif tx_type == HexBytes("0x02"):
             txn_data["max_gas_fee"] = txn_data.pop("maxFeePerGas", 0)
             txn_data["max_priority_fee"] = txn_data.pop("maxPriorityFeePerGas", 0)
             txn_data["access_list"] = txn_data.pop("accessList", [])
@@ -194,6 +194,8 @@ def _prepare_data_for_hashing(data: dict) -> dict:
             item = asdict(value)
         elif isinstance(value, dict):
             item = _prepare_data_for_hashing(item)
+        elif isinstance(value, bytes):
+            item = value.hex()
 
         result[key] = item
 
