@@ -20,10 +20,10 @@ extras_require = {
         "flake8-pydantic",  # For detecting issues with Pydantic models
         "flake8-type-checking",  # Detect imports to move in/out of type-checking blocks
         "isort>=5.13.2,<6",  # Import sorting linter
-        "mdformat>=0.7.18",  # Auto-formatter for markdown
+        "mdformat>=0.7.22",  # Auto-formatter for markdown
         "mdformat-gfm>=0.3.5",  # Needed for formatting GitHub-flavored markdown
         "mdformat-frontmatter>=0.4.1",  # Needed for frontmatters-style headers in issue templates
-        "mdformat-pyproject>=0.0.1",  # Allows configuring in pyproject.toml
+        "mdformat-pyproject>=0.0.2",  # Allows configuring in pyproject.toml
     ],
     "doc": [
         "Sphinx>=6.1.3,<7",  # Documentation generator
@@ -31,7 +31,7 @@ extras_require = {
         "towncrier>=19.2.0, <20",  # Generate release notes
     ],
     "release": [  # `release` GitHub Action job uses this
-        "setuptools",  # Installation tool
+        "setuptools>=75.6.0",  # Installation tool
         "setuptools-scm",  # Installation tool
         "wheel",  # Packaging tool
         "twine",  # Package upload tool
@@ -70,13 +70,13 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-ape>=0.8.1,<0.9",
-        "click",  # Use same version as eth-ape
-        "trezor[ethereum]>=0.13.8,<0.14",
-        # ApeWorx packages
-        "eth-pydantic-types",  # Use same version as eth-ape
+        "click>=8.1.8,<9",
+        "trezor[ethereum]>=0.13.9,<0.14",
+        # ApeWorX packages
+        "eth-pydantic-types>=0.2.0,<0.3",
         # Ethereum Foundation packages
-        "eth-typing",  # Use same version as eth-ape
-        "eth-account",  # Use same version as eth-ape
+        "eth-typing>=5.2.1,<6",
+        "eth-account>=0.13.7,<0.14",
     ],
     entry_points={
         "ape_cli_subcommands": [
@@ -103,5 +103,6 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
 )
