@@ -96,6 +96,27 @@ You can also verify a message with a signature:
 ape trezor verify-message "hello world" <signature>
 ```
 
+## Using `trezorctl`
+
+For conveinence, we've added `trezorctl` from the `trezor` library as a subcommand under this plugin's own `ape trezor` cli subcommand.
+To access it, simply use `ape trezor ctl [CMD]`.
+
+As an example, to connect to the new BLE-enabled Trezor 7 device, use:
+
+```sh
+$ ape trezor ctl ble connect
+```
+
+You can also use other commands for deeper management of the device such as:
+
+```sh
+# Setup a new device
+$ ape trezor ctl device setup
+
+# Manage firmware on device(s)
+$ ape trezor ctl firmware
+```
+
 ## Development
 
 Please see the [contributing guide](CONTRIBUTING.md) to learn more how to contribute to this project.
