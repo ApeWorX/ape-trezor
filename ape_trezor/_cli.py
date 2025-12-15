@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, cast
 import click
 from ape.cli.arguments import existing_alias_argument, non_existing_alias_argument
 from ape.cli.options import ape_cli_context, skip_confirmation_option
+from trezorlib.cli.trezorctl import cli as trezorlib_cli
 
 from ape_trezor.exceptions import TrezorSigningError
 from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
@@ -186,3 +187,9 @@ def verify_message(cli_ctx, message, signature):
     )
 
     click.echo(f"Signer: {signer_address}  {alias}")
+
+
+trezorlib_cli.help = """Use `trezorctl` commands
+
+This is the trezor-maintained cli from `trezorlib`"""
+cli.add_command(trezorlib_cli, "ctl")
