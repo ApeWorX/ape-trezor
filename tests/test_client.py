@@ -8,14 +8,18 @@ from ape_trezor.client import TrezorAccountClient, TrezorClient, extract_signatu
 
 
 @pytest.fixture
-def mock_device_client(mocker):
+def mock_device_session(mocker):
     return mocker.MagicMock()
 
 
 @pytest.fixture
-def patch_create_default_client(mocker, mock_device_client):
+def patch_create_default_client(mocker, mock_device_session):
+    mock_device_client = mocker.MagicMock()
+    mock_device_client.get_session = lambda: mock_device_session
+
     patch = mocker.patch("ape_trezor.client.get_default_client")
     patch.return_value = mock_device_client
+
     return patch
 
 
@@ -74,13 +78,13 @@ def dynamic_fee_transaction(base_transaction_values, constants):
 
 class TestTrezorClient:
     @pytest.fixture
-    def client(self, hd_path, mock_device_client):
-        return TrezorClient(hd_path, client=mock_device_client)
+    def client(self, hd_path, mock_device_session):
+        return TrezorClient(hd_path, session=mock_device_session)
 
-    def test_init_creates_client(self, patch_create_default_client, hd_path, mock_device_client):
+    def test_init_creates_client(self, patch_create_default_client, hd_path, mock_device_session):
         client = TrezorClient(hd_path)
         assert patch_create_default_client.call_count == 1
-        assert client.client == mock_device_client
+        assert client.session == mock_device_session
 
     def test_get_account_path(self, client, mock_get_address, address):
         mock_get_address.return_value = address
@@ -97,8 +101,8 @@ def test_extract_signature_vrs_bytes(signature, constants):
 
 class TestTrezorAccountClient:
     @pytest.fixture
-    def account_client(self, address, account_hd_path, mock_device_client):
-        return TrezorAccountClient(address, account_hd_path, client=mock_device_client)
+    def account_client(self, address, account_hd_path, mock_device_session):
+        return TrezorAccountClient(address, account_hd_path, session=mock_device_session)
 
     def test_sign_personal_message(
         self, mocker, account_client, account_hd_path, signature, constants
@@ -112,7 +116,7 @@ class TestTrezorAccountClient:
         assert r == constants.SIG_R
         assert s == constants.SIG_S
         patch.assert_called_once_with(
-            account_client.client, account_hd_path.address_n, b"Hello Apes"
+            account_client.session, account_hd_path.address_n, b"Hello Apes"
         )
 
     def test_sign_static_fee_transaction(
@@ -120,7 +124,7 @@ class TestTrezorAccountClient:
         mocker,
         account_client,
         static_fee_transaction,
-        mock_device_client,
+        mock_device_session,
         account_hd_path,
         constants,
     ):
@@ -129,7 +133,7 @@ class TestTrezorAccountClient:
         actual = account_client.sign_static_fee_transaction(**static_fee_transaction)
         assert actual == (constants.SIG_V, constants.SIG_R, constants.SIG_S)
         sign_eip1559_patch.assert_called_once_with(
-            mock_device_client,
+            mock_device_session,
             account_hd_path.address_n,
             nonce=constants.NONCE,
             gas_price=constants.GAS_PRICE,
@@ -145,7 +149,7 @@ class TestTrezorAccountClient:
         mocker,
         account_client,
         dynamic_fee_transaction,
-        mock_device_client,
+        mock_device_session,
         account_hd_path,
         constants,
     ):
@@ -154,7 +158,7 @@ class TestTrezorAccountClient:
         actual = account_client.sign_dynamic_fee_transaction(**dynamic_fee_transaction)
         assert actual == (constants.SIG_V, constants.SIG_R, constants.SIG_S)
         sign_eip1559_patch.assert_called_once_with(
-            mock_device_client,
+            mock_device_session,
             account_hd_path.address_n,
             nonce=constants.NONCE,
             gas_limit=constants.GAS_LIMIT,
@@ -185,10 +189,10 @@ class TestTrezorAccountClient:
         assert sign_eip1559_patch.call_count == 1
         assert apply_settings_patch.call_count == 2
         call_args = apply_settings_patch.call_args_list
-        assert call_args[0][0][0] == account_client.client
+        assert call_args[0][0][0] == account_client.session
         assert call_args[0][1]["safety_checks"] == SafetyCheckLevel.PromptTemporarily
 
-        assert call_args[1][0][0] == account_client.client
+        assert call_args[1][0][0] == account_client.session
         assert call_args[1][1]["safety_checks"] == SafetyCheckLevel.Strict
 
         expected_warning = (

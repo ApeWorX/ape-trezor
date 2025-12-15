@@ -2,7 +2,6 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional
 
 from ape.logging import logger
-from trezorlib.client import TrezorClient as LibTrezorClient
 from trezorlib.client import get_default_client
 from trezorlib.device import apply_settings
 from trezorlib.ethereum import (
@@ -28,6 +27,7 @@ from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
 
 if TYPE_CHECKING:
     from eth_typing.evm import ChecksumAddress
+    from trezorlib.transport.session import Session
 
     from ape_trezor.hdpath import HDBasePath, HDPath
 
@@ -41,24 +41,27 @@ class TrezorClient:
     This class is a client for the Trezor device.
     """
 
-    def __init__(self, hd_root_path: "HDBasePath", client: Optional[LibTrezorClient] = None):
-        if not client:
+    def __init__(self, hd_root_path: "HDBasePath", session: Optional["Session"] = None):
+        if not session:
             try:
-                self.client = get_default_client()
+                client = get_default_client()
             except TransportException:
                 raise TrezorClientConnectionError()
             # Handles an unhandled usb exception in Trezor transport
             except Exception as exc:
                 raise TrezorClientError(f"Error: {exc}")
+
+            self.session = client.get_session()
+
         else:
-            self.client = client
+            self.session = session
 
         self._hd_root_path = hd_root_path
 
     def get_account_path(self, account_id: int) -> str:
         account_path = self._hd_root_path.get_account_path(account_id)
         try:
-            message_type = get_address(self.client, account_path.address_n)
+            message_type = get_address(self.session, account_path.address_n)
             return str(message_type)
 
         except PinException as err:
@@ -93,15 +96,21 @@ class TrezorAccountClient:
         self,
         address: "ChecksumAddress",
         account_hd_path: "HDPath",
-        client: Optional[LibTrezorClient] = None,
+        session: Optional["Session"] = None,
     ):
-        if not client:
+        if not session:
             try:
-                self.client = get_default_client()
+                client = get_default_client()
             except TransportException:
                 raise TrezorClientConnectionError()
+            # Handles an unhandled usb exception in Trezor transport
+            except Exception as exc:
+                raise TrezorClientError(f"Error: {exc}")
+
+            self.session = client.get_session()
+
         else:
-            self.client = client
+            self.session = session
 
         self._address = address
         self._account_hd_path = account_hd_path
@@ -120,7 +129,7 @@ class TrezorAccountClient:
         to validate the message data.
         """
         ethereum_message_signature = sign_message(
-            self.client, self._account_hd_path.address_n, message
+            self.session, self._account_hd_path.address_n, message
         )
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
 
@@ -135,7 +144,7 @@ class TrezorAccountClient:
         Returns:
             tuple[int, bytes, bytes]: A signature tuple.
         """
-        signed_data = sign_typed_data(self.client, self._account_hd_path.address_n, data)
+        signed_data = sign_typed_data(self.session, self._account_hd_path.address_n, data)
         return extract_signature_vrs_bytes(signature_bytes=signed_data.signature)
 
     def sign_typed_data_hash(
@@ -154,7 +163,7 @@ class TrezorAccountClient:
             tuple[int, bytes, bytes]: A signature tuple.
         """
         signed_data = sign_typed_data_hash(
-            self.client, self._account_hd_path.address_n, domain_hash, message_hash=message_hash
+            self.session, self._account_hd_path.address_n, domain_hash, message_hash=message_hash
         )
         return extract_signature_vrs_bytes(signature_bytes=signed_data.signature)
 
@@ -167,7 +176,7 @@ class TrezorAccountClient:
     def _sign_transaction(self, lib_call: Callable, **kwargs) -> tuple[int, bytes, bytes]:
         did_change = self._allow_default_ethereum_account_signing()
         try:
-            return lib_call(self.client, self._account_hd_path.address_n, **kwargs)
+            return lib_call(self.session, self._account_hd_path.address_n, **kwargs)
 
         except TrezorFailure as err:
             forbidden_key_path = "forbidden key path" in str(err).lower()
@@ -179,7 +188,7 @@ class TrezorAccountClient:
 
         finally:
             if did_change:
-                apply_settings(self.client, safety_checks=SafetyCheckLevel.Strict)
+                apply_settings(self.session, safety_checks=SafetyCheckLevel.Strict)
 
     def _allow_default_ethereum_account_signing(self) -> bool:
         key_path = self._account_hd_path.path
@@ -193,7 +202,7 @@ class TrezorAccountClient:
             "switching safety level check to 'PromptTemporarily'. "
             "Please ensure you are only using addresses on the Ethereum ecosystem."
         )
-        apply_settings(self.client, safety_checks=SafetyCheckLevel.PromptTemporarily)
+        apply_settings(self.session, safety_checks=SafetyCheckLevel.PromptTemporarily)
         return True
 
 
