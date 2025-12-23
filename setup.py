@@ -69,11 +69,12 @@ setup(
     url="https://github.com/ApeWorX/ape-trezor",
     include_package_data=True,
     install_requires=[
-        "eth-ape>=0.8.1,<0.9",
+        "eth-ape>=0.8.43,<0.9",
         "click>=8.1.8,<9",
         "trezor[ethereum]>=0.13.9,<0.14",
         # ApeWorX packages
         "eth-pydantic-types>=0.2.0,<0.3",
+        "eip712>=0.3",
         # Ethereum Foundation packages
         "eth-typing>=5.2.1,<6",
         "eth-account>=0.13.7,<0.14",

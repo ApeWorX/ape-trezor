@@ -6,8 +6,8 @@ from typing import Any, Optional
 
 from ape.api import AccountAPI, AccountContainerAPI, PluginConfig, TransactionAPI
 from ape.types import AddressType, MessageSignature, TransactionSignature
-from dataclassy import asdict
-from eip712 import EIP712Message, EIP712Type
+from eip712 import EIP712Message
+from eip712.messages import extract_eip712_struct_message
 from eth_account.messages import SignableMessage, encode_defunct
 from eth_pydantic_types import HexBytes
 
@@ -80,7 +80,7 @@ class TrezorAccount(AccountAPI):
 
     def sign_message(self, msg: Any, **signer_options) -> Optional[MessageSignature]:
         if isinstance(msg, EIP712Message):
-            data = _prepare_data_for_hashing(msg._body_)
+            data = extract_eip712_struct_message(msg)
             signed_msg = self.client.sign_typed_data(data)
         elif isinstance(msg, dict):
             # Raw typed data.
@@ -182,24 +182,6 @@ class TrezorAccount(AccountAPI):
 
         txn.signature = TransactionSignature(v=v, r=r, s=s)
         return txn
-
-
-def _prepare_data_for_hashing(data: dict) -> dict:
-    # NOTE: Private method copied from eip712 package.
-    result: dict = {}
-
-    for key, value in data.items():
-        item: Any = value
-        if isinstance(value, EIP712Type):
-            item = asdict(value)
-        elif isinstance(value, dict):
-            item = _prepare_data_for_hashing(item)
-        elif isinstance(value, bytes):
-            item = value.hex()
-
-        result[key] = item
-
-    return result
 
 
 def _create_client(address: AddressType, hd_path: HDPath):
