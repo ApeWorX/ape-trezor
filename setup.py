@@ -71,7 +71,7 @@ setup(
     install_requires=[
         "eth-ape>=0.8.43,<0.9",
         "click>=8.1.8,<9",
-        "trezor[ethereum]>=0.13.9,<0.14",
+        "trezor[ethereum]>=0.20,<1",
         # ApeWorX packages
         "eth-pydantic-types>=0.2.0,<0.3",
         "eip712>=0.3",
