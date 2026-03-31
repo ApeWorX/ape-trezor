@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional
 
+import click
 from ape.logging import logger
 from trezorlib.client import get_default_client
 from trezorlib.device import apply_settings
@@ -100,7 +101,10 @@ class TrezorAccountClient:
     ):
         if not session:
             try:
-                client = get_default_client()
+                client = get_default_client(
+                    app_name="Ape Framework",
+                    code_entry_callback=self._code_entry_callback,
+                )
             except TransportException:
                 raise TrezorClientConnectionError()
             # Handles an unhandled usb exception in Trezor transport
@@ -114,6 +118,9 @@ class TrezorAccountClient:
 
         self._address = address
         self._account_hd_path = account_hd_path
+
+    def _code_entry_callback(self) -> str:
+        return click.prompt("Enter pairing code from device")
 
     def __str__(self):
         return self._address
