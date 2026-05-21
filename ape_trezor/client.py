@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import click
 from ape.logging import logger
@@ -42,7 +42,7 @@ class TrezorClient:
     This class is a client for the Trezor device.
     """
 
-    def __init__(self, hd_root_path: "HDBasePath", session: Optional[Session] = None):
+    def __init__(self, hd_root_path: "HDBasePath", session: Session | None = None):
         if not session:
             try:
                 client = get_default_client(
@@ -103,7 +103,7 @@ class TrezorAccountClient:
         self,
         address: "ChecksumAddress",
         account_hd_path: "HDPath",
-        session: Optional[Session] = None,
+        session: Session | None = None,
     ):
         if not session:
             try:
@@ -141,7 +141,7 @@ class TrezorAccountClient:
         using your Trezor device. You will need to follow the prompts on the device
         to validate the message data.
         """
-        ethereum_message_signature: "EthereumMessageSignature" = sign_message(
+        ethereum_message_signature: EthereumMessageSignature = sign_message(
             self.session, self._account_hd_path.address_n, message  # type: ignore[arg-type]
         )
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
@@ -157,7 +157,7 @@ class TrezorAccountClient:
         Returns:
             tuple[int, bytes, bytes]: A signature tuple.
         """
-        signed_data: "EthereumMessageSignature" = sign_typed_data(
+        signed_data: EthereumMessageSignature = sign_typed_data(
             self.session, self._account_hd_path.address_n, data  # type: ignore[arg-type]
         )
         return extract_signature_vrs_bytes(signature_bytes=signed_data.signature)
@@ -177,7 +177,7 @@ class TrezorAccountClient:
         Returns:
             tuple[int, bytes, bytes]: A signature tuple.
         """
-        signed_data: "EthereumMessageSignature" = sign_typed_data_hash(
+        signed_data: EthereumMessageSignature = sign_typed_data_hash(
             self.session,
             self._account_hd_path.address_n,
             domain_hash,  # type: ignore[arg-type]

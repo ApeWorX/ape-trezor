@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import click
 from ape.cli import PromptChoice
@@ -46,8 +46,8 @@ class AddressPromptChoice(PromptChoice):
         )
 
     def convert(
-        self, value: Any, param: Optional["Parameter"], ctx: Optional["Context"]
-    ) -> Optional[str]:
+        self, value: Any, param: "Parameter | None", ctx: "Context | None"
+    ) -> str | None:
         """Convert the user selection to a choice or increment /decrement
         if they input ``n`` or ``p``."""
         if self._page_from_choice(value):
@@ -86,7 +86,7 @@ class AddressPromptChoice(PromptChoice):
         if choice == "n":
             self._index_offset += self._page_size
             return True
-        elif choice == "p" and self._is_incremented:
+        if choice == "p" and self._is_incremented:
             self._index_offset -= self._page_size
             return True
 
