@@ -142,7 +142,9 @@ class TrezorAccountClient:
         to validate the message data.
         """
         ethereum_message_signature: EthereumMessageSignature = sign_message(
-            self.session, self._account_hd_path.address_n, message  # type: ignore[arg-type]
+            self.session,
+            self._account_hd_path.address_n,
+            message,  # type: ignore[arg-type]
         )
         return extract_signature_vrs_bytes(signature_bytes=ethereum_message_signature.signature)
 
@@ -158,7 +160,9 @@ class TrezorAccountClient:
             tuple[int, bytes, bytes]: A signature tuple.
         """
         signed_data: EthereumMessageSignature = sign_typed_data(
-            self.session, self._account_hd_path.address_n, data  # type: ignore[arg-type]
+            self.session,
+            self._account_hd_path.address_n,
+            data,  # type: ignore[arg-type]
         )
         return extract_signature_vrs_bytes(signature_bytes=signed_data.signature)
 

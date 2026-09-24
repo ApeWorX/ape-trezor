@@ -45,9 +45,7 @@ class AddressPromptChoice(PromptChoice):
             f"or type 'n' for the next {self._page_size} entries"
         )
 
-    def convert(
-        self, value: Any, param: "Parameter | None", ctx: "Context | None"
-    ) -> str | None:
+    def convert(self, value: Any, param: "Parameter | None", ctx: "Context | None") -> str | None:
         """Convert the user selection to a choice or increment /decrement
         if they input ``n`` or ``p``."""
         if self._page_from_choice(value):
