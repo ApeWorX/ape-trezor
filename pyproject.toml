@@ -113,7 +113,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"ape_trezor/**/*.py" = ["B904", "RET505", "RET504"]
+"ape_trezor/**/*.py" = ["B904", "RET505", "RET504", "ARG001", "ARG002"]
 "version.py" = ["ALL"]
 "__init__.py" = ["F401"]
 "tests/**/*.py" = ["ARG001", "ARG002", "B904"]  # Pytest fixtures may appear unused
