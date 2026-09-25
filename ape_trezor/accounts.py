@@ -2,7 +2,7 @@ import json
 from collections.abc import Iterator
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from ape.api import AccountAPI, AccountContainerAPI, PluginConfig, TransactionAPI
 from ape.types import AddressType, MessageSignature, TransactionSignature
@@ -78,7 +78,7 @@ class TrezorAccount(AccountAPI):
     def client(self) -> TrezorAccountClient:
         return _create_client(self.address, self.hd_path)
 
-    def sign_message(self, msg: Any, **signer_options) -> Optional[MessageSignature]:
+    def sign_message(self, msg: Any, **signer_options) -> MessageSignature | None:
         if isinstance(msg, EIP712Message):
             data = extract_eip712_struct_message(msg)
             signed_msg = self.client.sign_typed_data(data)
@@ -135,7 +135,7 @@ class TrezorAccount(AccountAPI):
 
         return MessageSignature(*signed_msg)
 
-    def sign_transaction(self, txn: TransactionAPI, **kwargs) -> Optional[TransactionAPI]:
+    def sign_transaction(self, txn: TransactionAPI, **kwargs) -> TransactionAPI | None:
         txn_data = txn.model_dump(mode="json", by_alias=True)
 
         if "type" not in txn_data and "gasPrice" in txn_data:
@@ -143,9 +143,7 @@ class TrezorAccount(AccountAPI):
 
         else:
             tx_type = txn_data.pop("type", HexBytes("0x00"))
-            if isinstance(tx_type, int):
-                tx_type = HexBytes(tx_type)
-            elif isinstance(tx_type, bytes):
+            if isinstance(tx_type, (int, bytes)):
                 tx_type = HexBytes(tx_type)
 
         # NOTE: `trezorlib` expects empty bytes when no data.

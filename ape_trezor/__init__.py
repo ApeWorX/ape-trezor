@@ -22,8 +22,7 @@ def __getattr__(name: str) -> Any:
     if name in ("AccountContainer", "TrezorAccount", "TrezorConfig"):
         return getattr(import_module("ape_trezor.accounts"), name)
 
-    else:
-        raise AttributeError(name)
+    raise AttributeError(name)
 
 
 __all__ = [
