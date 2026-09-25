@@ -39,7 +39,7 @@ uv run prek install
 Trezor accounts have the following capabilities in `ape`:
 
 1. Can sign transactions (both static-fee and EIP-1559 compliant)
-2. Can sign messages using the default EIP-191 specification
+1. Can sign messages using the default EIP-191 specification
 
 To use the Trezor plugin, you must have the Trezor USB device connected and unlocked.
 
