@@ -4,7 +4,7 @@ Ape Trezor is a plugin for [Ape Framework](https://github.com/ApeWorx/ape) which
 
 ## Dependencies
 
-- [python3](https://www.python.org/downloads) version 3.10 up tp 3.14.
+- [Python 3](https://www.python.org/downloads) version 3.10 or greater.
 - Supported Trezor device (x = tested):
   - [x] Model T
   - [ ] Safe 3
@@ -23,14 +23,15 @@ You can install the latest release via [`pip`](https://pypi.org/project/pip/):
 pip install ape-trezor
 ```
 
-### via `setuptools`
+### via source
 
-You can clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
+You can clone the repository and install for development:
 
 ```bash
 git clone https://github.com/ApeWorX/ape-trezor.git
 cd ape-trezor
-python3 setup.py install
+uv sync --group dev
+uv run prek install
 ```
 
 ## Quick Usage
