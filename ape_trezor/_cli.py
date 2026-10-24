@@ -11,6 +11,7 @@ from ape_trezor.utils import DEFAULT_ETHEREUM_HD_PATH
 if TYPE_CHECKING:
     from ape.api.accounts import AccountAPI
 
+    from ape_trezor.accounts import TrezorConfig
     from ape_trezor.client import TrezorClient
     from ape_trezor.hdpath import HDBasePath
 
@@ -49,12 +50,11 @@ def _list(cli_ctx):
 def handle_hd_path(ctx, param, value):
     from ape.utils.basemodel import ManagerAccessMixin
 
-    from ape_trezor.accounts import TrezorConfig
     from ape_trezor.hdpath import HDBasePath
 
     if not value:
         try:
-            config = cast(TrezorConfig, ManagerAccessMixin.config_manager.get_config("trezor"))
+            config = cast("TrezorConfig", ManagerAccessMixin.config_manager.get_config("trezor"))
             value = config.hd_path
         except Exception:
             value = DEFAULT_ETHEREUM_HD_PATH
@@ -113,7 +113,7 @@ def delete(cli_ctx, alias):
 
     container = cli_ctx.account_manager.containers.get("trezor")
     container.delete_account(alias)
-    cli_ctx.logger.success(f"Account '{alias}' has been removed.")
+    click.echo(f"Account '{alias}' has been removed.")
 
 
 @cli.command()
@@ -136,7 +136,7 @@ def delete_all(cli_ctx, skip_confirmation):
 
     for account in trezor_accounts:
         container.delete_account(account.alias)
-        cli_ctx.logger.success(f"Account '{account.alias}' has been removed.")
+        click.echo(f"Account '{account.alias}' has been removed.")
 
 
 @cli.command(short_help="Sign a message with your Trezor device")
